@@ -1,0 +1,2 @@
+This section is responsible for finger tracking and force feedback of each finger of the Force Feedback Glove. Also communicating over the serial monitor to import the glove and tracking data into VR. 
+**Much of the code in this section was created by LucasVR for the LucasVR Prototype 4 gloves. We have augmented the base code from that project so that force feedback is applied based off of items grabbed by the robotic hand rather than virtual items in VR.
