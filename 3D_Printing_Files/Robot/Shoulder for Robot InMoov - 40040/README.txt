@@ -1,0 +1,4 @@
+Shoulder for Robot InMoov by Gael_Langevin on Thingiverse: https://www.thingiverse.com/thing:40040
+
+Summary:
+Here is "InMoov", the robot you can print and animate. You have a 3D printer, some building skills, This project is for you!!Don't be scared or intimidated, I started this a few months ago and didn't even know what was Arduino or a servo motor!Start with printing the hand like I did, and go on the rest if you feel.thingiverse.com/thing:17773Well it's been a long journey creating this shoulder, I have gone through quite many prints for to finally release it.Blog with more info and instructions:inmoov.blogspot.cominmoov.blogspot.fr/p/assembly-help.htmlThese videos aren't all actual, I have modified some parts in between:http://www.youtube.com/watch?v=W62Wfz1xqYghttp://www.youtube.com/watch?v=tojIdfywYVIyoutube.com/watch?v=BAs2F4sFVdAhttp://www.youtube.com/watch?v=kqG7vASU1YE
