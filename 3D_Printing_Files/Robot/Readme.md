@@ -1,0 +1,1 @@
+All stl files needed to build the various parts of the robot. Some files are from the open source project InMoov (Hand, Forearm, Bicep, Shoulder) and others were designed by Kevin Quigley (Head, Neck).
