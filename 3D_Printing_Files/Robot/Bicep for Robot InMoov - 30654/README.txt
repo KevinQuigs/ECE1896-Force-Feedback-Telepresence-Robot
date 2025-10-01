@@ -1,0 +1,4 @@
+Bicep for Robot InMoov by Gael_Langevin on Thingiverse: https://www.thingiverse.com/thing:30654
+
+Summary:
+Here is "InMoov", the robot you can print and animate. You have a 3D printer, some building skills, This project is for you!!Don't be scared or intimidated, I started this a few months ago and didn't even know what was Arduino or a servo motor!Start with printing the hand like I did, and go on the rest if you feel.http://www.thingiverse.com/thing:17773Well it's been a fun time creating this bicep, I have gone through quite many prints for to finally release it.Blog with more info and instructions:inmoov.blogspot.comhttp://inmoov.blogspot.fr/p/assembly-help.htmlThis video isn't actual, I have modified many parts since then:youtube.com/watch?v=XAcGlytxPVIyoutube.com/watch?v=BAs2F4sFVdAThe latest video:http://www.youtube.com/watch?v=kqG7vASU1YE  
