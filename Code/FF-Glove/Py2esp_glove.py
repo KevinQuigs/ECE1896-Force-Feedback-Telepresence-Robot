@@ -1,48 +1,54 @@
 import serial
 import socket
 import threading
+import time
 
 ESP_DATA = ""
 UNITY_DATA = ""
 
-# read ESP32 serial
+# --- Read ESP32 serial in a thread ---
 def read_esp():
     global ESP_DATA
-    esp = serial.Serial("COM4", 9600, timeout=1)
+    try:
+        esp = serial.Serial("COM4", 9600, timeout=1)
+    except Exception as e:
+        print("Failed to open serial:", e)
+        return
+
     while True:
         try:
             line = esp.readline().decode().strip()
             if line:
                 ESP_DATA = line
-                # print("ESP:", ESP_DATA)
-
-                # HAPTIC FEEDBACK DATA BACK TO ESP
+                # Haptic feedback example
                 if ESP_DATA == "1":
                     esp.write(b"1\n")
                 else:
                     esp.write(b"0\n")
+        except Exception as e:
+            print("ESP read error:", e)
+            time.sleep(0.1)
 
-        except:
-            pass
-
-
-# ✅ read Unity TCP
+# --- Read Unity TCP in a thread ---
 def read_unity(conn):
     global UNITY_DATA
     while True:
-        data = conn.recv(1024).decode().strip()
-        if not data:
+        try:
+            data = conn.recv(1024).decode().strip()
+            if not data:
+                break
+            UNITY_DATA = data
+        except Exception as e:
+            print("Unity read error:", e)
             break
-        UNITY_DATA = data
-        print("Unity:", UNITY_DATA)
-
 
 def main():
+    global ESP_DATA, UNITY_DATA
 
-    # Thread for ESP commmunication
+    # Start ESP thread
     threading.Thread(target=read_esp, daemon=True).start()
 
-    # Unity server
+    # Start Unity TCP server
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind(("0.0.0.0", 5001))
     server.listen(1)
@@ -50,6 +56,15 @@ def main():
 
     conn, _ = server.accept()
     print("Unity connected")
-    read_unity(conn)
 
-main()
+    # Start Unity reader in a separate thread
+    threading.Thread(target=read_unity, args=(conn,), daemon=True).start()
+
+    # Main loop: concatenate and print messages
+    while True:
+        concatenated = f"ESP: {ESP_DATA} | Unity: {UNITY_DATA}"
+        print(concatenated)
+        time.sleep(0.1)  # adjust rate as needed
+
+if __name__ == "__main__":
+    main()
