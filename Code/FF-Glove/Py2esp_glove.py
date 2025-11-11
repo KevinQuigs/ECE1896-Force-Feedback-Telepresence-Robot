@@ -50,7 +50,7 @@ def main():
 
     # Start Unity TCP server
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind(("0.0.0.0", 5001))
+    server.bind(("0.0.0.0", 5001)) # Listening to all network interfaces on computer, Port 5001 (127.0.0.1 Would be just local machine programs)
     server.listen(1)
     print("Waiting for Unity...")
 
@@ -62,6 +62,7 @@ def main():
 
     # Main loop: concatenate and print messages
     while True:
+        #FT_FI_FM_FR_FP_MP_MY_MP_HX_HY_HZ_KP_KY_KR
         concatenated = f"ESP: {ESP_DATA} | Unity: {UNITY_DATA}"
         print(concatenated)
         time.sleep(0.1)  # adjust rate as needed

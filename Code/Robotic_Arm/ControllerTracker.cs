@@ -51,7 +51,7 @@ public class ControllerTracker : MonoBehaviour
     {
         // IOThread.Start();
         // Connect to TCP server
-        client = new TcpClient("127.0.0.1", 5001);
+        client = new TcpClient("127.0.0.1", 5001); // Connects Local Host (Local Machine)
         stream = client.GetStream();
     }
 
