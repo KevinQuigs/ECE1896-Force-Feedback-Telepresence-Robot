@@ -8,13 +8,13 @@ const int middlePin = 4;
 const int ringPin = 16;
 const int pinkyPin = 17;
 const int wristFlexPin = 5;   // wrist flexion/extension
-const int wristRotatePin = 19;  // wrist rotation
+const int wristRotatePin = 18;  // wrist rotation
 
 Servo thumbF, indexF, middleF, ringF, pinkyF, wristFlex, wristRotate;
 
 String input = "";
-int initial_angle = 0;
-int angle = 160;
+int initial_angle = 180;
+int angle = 0;
 
 void setup() {
   // Serial.begin(115200);
@@ -29,13 +29,13 @@ void setup() {
   //Serial.println("Initializing servos to 0°...");
 
   // Initialize all angles to 180 (extended out)
-  thumbF.write(initial_angle);        
+  thumbF.write(60);        
   indexF.write(initial_angle);       
   middleF.write(initial_angle);       
   ringF.write(180 - initial_angle);       
   pinkyF.write(180 - initial_angle);      
-  wristFlex.write(50);    
-  wristRotate.write(150);  
+  wristFlex.write(100);    
+  wristRotate.write(90);  
   delay(500);
 
 }
@@ -47,14 +47,14 @@ void loop() {
       delay(500);
     }
     indexF.write(initial_angle);      delay(500);
-    middleF.write(initial_angle);      delay(500);
+    // middleF.write(initial_angle);      delay(500);
     ringF.write(180 - initial_angle);   delay(500);
     pinkyF.write(180 - initial_angle);  
 
     if (initial_angle == angle)
-      initial_angle = 0; 
+      initial_angle = 180; 
     else
-      initial_angle += 20;   
+      initial_angle -= 10;   
     
     delay(500);
 
