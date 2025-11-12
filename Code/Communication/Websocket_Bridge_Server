@@ -131,31 +131,42 @@ class RobotBridge:
     
     async def read_from_esp32(self):
         """Read sensor data from ESP32 and broadcast to all clients"""
+        print("[ESP32 Reader] Starting ESP32 reader task")
         while True:
             try:
-                if COMM_MODE == 'serial' and self.serial_conn and self.serial_conn.in_waiting > 0:
-                    # Read line from ESP32
-                    line = self.serial_conn.readline().decode('utf-8').strip()
-                    
-                    if line:
-                        print(f"ESP32 -> Pi: {line}")  # Debug output
+                if COMM_MODE == 'serial' and self.serial_conn:
+                    if self.serial_conn.in_waiting > 0:
+                        # Read line from ESP32
+                        line = self.serial_conn.readline().decode('utf-8', errors='ignore').strip()
                         
-                        # Parse sensor data from ESP32
-                        sensor_data = self.parse_esp32_data(line)
-                        
-                        if sensor_data and self.clients:
-                            # Broadcast to all connected clients
-                            message = json.dumps(sensor_data)
-                            print(f"Pi -> Browser: {message}")  # Debug output
-                            await asyncio.gather(
-                                *[client.send(message) for client in self.clients],
-                                return_exceptions=True
-                            )
+                        if line:
+                            print(f"ESP32 -> Pi: {line}")  # Debug output
+                            
+                            # Parse sensor data from ESP32
+                            sensor_data = self.parse_esp32_data(line)
+                            
+                            if sensor_data and self.clients:
+                                # Broadcast to all connected clients
+                                message = json.dumps(sensor_data)
+                                print(f"Pi -> Browser ({len(self.clients)} clients): {message}")  # Debug output
+                                
+                                # Send to each client individually with error handling
+                                for client in list(self.clients):  # Use list() to avoid set changed during iteration
+                                    try:
+                                        await client.send(message)
+                                    except Exception as e:
+                                        print(f"[ESP32 Reader] Error sending to client: {e}")
+                                        # Don't remove client here, let handle_websocket do it
                 
                 await asyncio.sleep(0.01)  # 100Hz polling rate
                 
+            except serial.SerialException as e:
+                print(f"[ESP32 Reader] Serial error: {e}")
+                await asyncio.sleep(1.0)  # Wait longer on serial errors
             except Exception as e:
-                print(f"Error reading from ESP32: {e}")
+                print(f"[ESP32 Reader] Error reading from ESP32: {e}")
+                import traceback
+                traceback.print_exc()
                 await asyncio.sleep(0.1)
     
     def parse_esp32_data(self, line):
@@ -224,17 +235,25 @@ class RobotBridge:
     
     async def handle_websocket(self, websocket, path):
         """Handle WebSocket connection"""
+        client_address = websocket.remote_address
+        print(f"[WebSocket] Connection attempt from {client_address}")
+        
         await self.register_client(websocket)
         
         try:
+            print(f"[WebSocket] Client {client_address} - Starting message loop")
             async for message in websocket:
+                print(f"[WebSocket] Received message from {client_address}: {message[:100]}...")  # First 100 chars
                 response = await self.handle_client_message(message)
                 if response:
                     await websocket.send(json.dumps(response))
                     
-        except websockets.exceptions.ConnectionClosed:
-            pass
+        except websockets.exceptions.ConnectionClosed as e:
+            print(f"[WebSocket] Connection closed from {client_address}: {e}")
+        except Exception as e:
+            print(f"[WebSocket] Error with client {client_address}: {e}")
         finally:
+            print(f"[WebSocket] Cleaning up connection from {client_address}")
             await self.unregister_client(websocket)
 
 async def main():
