@@ -238,8 +238,8 @@ class RobotBridge:
 # Global bridge instance
 bridge = None
 
-async def handle_websocket(websocket, path):
-    """WebSocket handler function"""
+async def handle_websocket(websocket):
+    """WebSocket handler function (websockets 14+ uses single parameter)"""
     global bridge
     
     client_address = websocket.remote_address
@@ -270,9 +270,13 @@ async def main():
     global bridge
     bridge = RobotBridge()
     
-    # Start WebSocket server
+    # Start WebSocket server with explicit handler
+    async def websocket_handler(websocket, path):
+        """WebSocket connection handler"""
+        await handle_websocket(websocket, path)
+    
     server = await websockets.serve(
-        handle_websocket,
+        websocket_handler,
         "0.0.0.0",  # Listen on all interfaces
         WEBSOCKET_PORT
     )
