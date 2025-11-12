@@ -78,7 +78,6 @@ class RobotBridge:
 
                 
                 # Pack data for ESP32 (binary format)
-                # Format: [message_type(1 byte)][pos_x(4)][pos_y(4)][pos_z(4)][rot_x(4)][rot_y(4)][rot_z(4)][rot_w(4)]
                 # Format: [message_type(1 byte)][THUMB(4)][INDEX(4)][MIDDLE(4)][RING(4)][PINKY(4)][Hand_pitch(4)][Hand_yaw(4)][Hand_roll(4)][Hand_x(4)][Hand_y(4)][Hand_z(4)][Head_pitch(4)][Head_yaw(4)][Head_roll(4)]
                 packed = struct.pack(
                     '<Bfffffffffffff',  # < = little-endian, B = unsigned char, f = float
@@ -139,13 +138,15 @@ class RobotBridge:
                     line = self.serial_conn.readline().decode('utf-8').strip()
                     
                     if line:
+                        print(f"ESP32 -> Pi: {line}")  # Debug output
+                        
                         # Parse sensor data from ESP32
-                        # Expected format: "FORCE:12.5,TEMP:25.3"
                         sensor_data = self.parse_esp32_data(line)
                         
                         if sensor_data and self.clients:
                             # Broadcast to all connected clients
                             message = json.dumps(sensor_data)
+                            print(f"Pi -> Browser: {message}")  # Debug output
                             await asyncio.gather(
                                 *[client.send(message) for client in self.clients],
                                 return_exceptions=True
@@ -158,28 +159,64 @@ class RobotBridge:
                 await asyncio.sleep(0.1)
     
     def parse_esp32_data(self, line):
-        """Parse sensor data from ESP32"""
+        """
+        Parse sensor data from ESP32
+        
+        Supported formats:
+        1. Simple analog test: "ANALOG:1234"
+        2. Full force sensors: "FORCE:12.5,34.6,56.7,78.9,90.1"
+        3. Legacy format: "FORCE:12.5,TEMP:25.3"
+        """
         try:
-            # Example format: "FORCE:12.5,TEMP:25.3,POS:1.2,3.4,5.6"
             data = {'type': 'sensor', 'timestamp': datetime.now().isoformat()}
             
-            parts = line.split(',')
-            for part in parts:
-                if ':' in part:
-                    key, value = part.split(':', 1)
-                    
-                    if key == 'FORCE':
-                        coords = value.split(',')
-                        if len(coords) == 5:
-                            data['position'] = {
-                                'Thumb': float(coords[0]),
-                                'Index': float(coords[1]),
-                                'Middle': float(coords[2]),
-                                'Ring': float(coords[3]),
-                                'Pinky': float(coords[4])
-                            }
+            # Simple analog value test
+            if line.startswith('ANALOG:'):
+                value_str = line.replace('ANALOG:', '').strip()
+                analog_value = float(value_str)
+                data['analog'] = analog_value
+                print(f"Parsed analog value: {analog_value}")
+                return data
             
-            return data if len(data) > 2 else None  # Must have more than just type and timestamp
+            # Full force sensor data (comma-separated values after FORCE:)
+            elif line.startswith('FORCE:'):
+                values_str = line.replace('FORCE:', '').strip()
+                values = values_str.split(',')
+                
+                if len(values) >= 5:
+                    data['thumb'] = float(values[0])
+                    data['index'] = float(values[1])
+                    data['middle'] = float(values[2])
+                    data['ring'] = float(values[3])
+                    data['pinky'] = float(values[4])
+                    print(f"Parsed force sensors: T={data['thumb']}, I={data['index']}, M={data['middle']}, R={data['ring']}, P={data['pinky']}")
+                    return data
+            
+            # Legacy format (multiple key:value pairs)
+            elif ':' in line:
+                parts = line.split(',')
+                for part in parts:
+                    if ':' in part:
+                        key, value = part.split(':', 1)
+                        
+                        if key == 'THUMB':
+                            data['thumb'] = float(value)
+                        elif key == 'INDEX':
+                            data['index'] = float(value)
+                        elif key == 'MIDDLE':
+                            data['middle'] = float(value)
+                        elif key == 'RING':
+                            data['ring'] = float(value)
+                        elif key == 'PINKY':
+                            data['pinky'] = float(value)
+                        elif key == 'TEMP':
+                            data['temperature'] = float(value)
+                
+                if len(data) > 2:  # More than just type and timestamp
+                    print(f"Parsed legacy format: {data}")
+                    return data
+            
+            return None
             
         except Exception as e:
             print(f"Error parsing ESP32 data: {line} - {e}")
@@ -219,6 +256,11 @@ async def main():
         print(f"Serial: {SERIAL_PORT} @ {SERIAL_BAUD} baud")
     else:
         print(f"UDP: {ESP32_UDP_IP}:{ESP32_UDP_PORT}")
+    print(f"{'='*50}")
+    print(f"\nExpected ESP32 formats:")
+    print(f"  Simple test:  ANALOG:1234")
+    print(f"  Force sensors: FORCE:12.5,34.6,56.7,78.9,90.1")
+    print(f"  Legacy format: THUMB:12.5,INDEX:34.6,...")
     print(f"{'='*50}\n")
     
     # Start ESP32 reader task
