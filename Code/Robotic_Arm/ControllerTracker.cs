@@ -1,14 +1,19 @@
 using UnityEngine;
 using UnityEngine.XR;
-using System.IO.Ports;
-using System.Threading;
+// using System.IO.Ports;
+// using System.Threading;
+using System.Net.Sockets;
+using System.Text;
 
 public class ControllerTracker : MonoBehaviour
 {   
-    Thread IOThread = new Thread(DataThread);
-    private static SerialPort sp;
-    private static string incomingMsg = "";
-    private static string outgoingMsg = "";
+    // Thread IOThread = new Thread(DataThread);
+    // private static SerialPort sp;
+    // private static string incomingMsg = "";
+    // private static string outgoingMsg = "";
+
+    TcpClient client;
+    NetworkStream stream;
 
 
 
@@ -18,33 +23,36 @@ public class ControllerTracker : MonoBehaviour
     private InputDevice rightController;
 
 
-    private static void DataThread()
-    {
-        sp = new SerialPort("COM4", 9600);
-        sp.Open();
+    // private static void DataThread()
+    // {
+    //     sp = new SerialPort("COM4", 9600);
+    //     sp.Open();
 
-        while(true) {
-            if (outgoingMsg != "")
-            {
-                sp.Write(outgoingMsg);
-                outgoingMsg = ""; // otherwise will keep sending data
-            }
+    //     while(true) {
+    //         if (outgoingMsg != "")
+    //         {
+    //             sp.Write(outgoingMsg);
+    //             outgoingMsg = ""; // otherwise will keep sending data
+    //         }
 
-            incomingMsg = sp.ReadExisting();
+    //         incomingMsg = sp.ReadExisting();
 
-            Thread.Sleep(200);
-        } 
-    }
+    //         Thread.Sleep(200);
+    //     } 
+    // }
 
-    private void OnDestroy()
-    {
-        IOThread.Abort();
-        sp.Close();
-    }
+    // private void OnDestroy()
+    // {
+    //     IOThread.Abort();
+    //     sp.Close();
+    // }
 
     void Start()
     {
-        IOThread.Start();
+        // IOThread.Start();
+        // Connect to TCP server
+        client = new TcpClient("127.0.0.1", 5001); // Connects Local Host (Local Machine)
+        stream = client.GetStream();
     }
 
 
@@ -80,10 +88,10 @@ public class ControllerTracker : MonoBehaviour
         {
             Debug.Log($"{name} Controller - Position: {position}, Rotation: {rotation.eulerAngles}");
             
-            if (position.x > 0.0)
-                outgoingMsg = "1\n";
-            else
-                outgoingMsg = "0\n";
+            //Send over controller tracking info
+            string outgoingMsg = $"Hand:{position}\n";
+            byte[] bytes = Encoding.ASCII.GetBytes(outgoingMsg); // Convert to bytes
+            stream.Write(bytes, 0, bytes.Length); // Send Message
 
             Debug.Log($"Outgoing: {outgoingMsg}");
         }

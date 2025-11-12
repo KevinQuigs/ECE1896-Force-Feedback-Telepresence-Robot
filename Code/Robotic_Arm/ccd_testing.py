@@ -3,7 +3,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
 # ----- Arm parameters -----
-segment_lengths = [2.0, 1.5]  # Upper arm, forearm
+segment_lengths = [11, 9.25]  # Upper arm, forearm
 num_joints = 4  # 3 shoulder + 1 elbow
 
 # Initialize joint angles: [yaw, pitch, abduction, elbow]
@@ -98,9 +98,9 @@ def ccd_step(joint_angles, target):
 plt.ion()
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
-ax.set_xlim(-5,5)
-ax.set_ylim(-5,5)
-ax.set_zlim(0,5)
+ax.set_xlim(-25,25)
+ax.set_ylim(-25,25)
+ax.set_zlim(0,25)
 ax.set_xlabel("X")
 ax.set_ylabel("Y")
 ax.set_zlabel("Z")
@@ -127,9 +127,9 @@ while True:
             ax.cla()  # clear old arm drawing but keep window open
             ax.plot(xs, ys, zs, '-o', linewidth=3, markersize=8)
             ax.scatter(target[0], target[1], target[2], c='r', s=100, marker='x')
-            ax.set_xlim(-5,5)
-            ax.set_ylim(-5,5)
-            ax.set_zlim(0,5)
+            ax.set_xlim(-25,25)
+            ax.set_ylim(-25,25)
+            ax.set_zlim(0,25)
             ax.set_xlabel("X")
             ax.set_ylabel("Y")
             ax.set_zlabel("Z")
@@ -141,7 +141,7 @@ while True:
                 break
 
     except ValueError:
-        print("Invalid input. Example: 2.0 1.5 1.0")
+        print("Invalid input. Example: 6.0 7.0 10.0")
 
 plt.ioff()
 plt.show()
