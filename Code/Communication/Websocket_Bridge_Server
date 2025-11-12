@@ -42,13 +42,13 @@ class RobotBridge:
             print(f"Serial connected: {SERIAL_PORT} @ {SERIAL_BAUD} baud")
         except Exception as e:
             print(f"Serial connection failed: {e}")
-            print("  Check: ls /dev/ttyUSB* or ls /dev/ttyACM*")
+            print("Check: ls /dev/ttyUSB* or ls /dev/ttyACM*")
     
     def setup_udp(self):
         """Initialize UDP socket for ESP32"""
         import socket
         self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        print(f"✓ UDP configured: {ESP32_UDP_IP}:{ESP32_UDP_PORT}")
+        print(f"UDP configured: {ESP32_UDP_IP}:{ESP32_UDP_PORT}")
     
     async def register_client(self, websocket):
         """Register new WebSocket client"""
@@ -63,7 +63,7 @@ class RobotBridge:
     async def handle_client_message(self, message):
         """
         Handle incoming message from browser (VR controller/headset and finger tracking data)
-        Format: {type: 'tracking', position: {x, y, z}, rotation: {x, y, z, w}}
+        Format: {type: 'tracking', rotationFinger : {t, i, m, r, p}, positionHand: {x, y, z}, rotationHand: {p, y, r}, rotationHead: {p, y, r}}
         """
         try:
             data = json.loads(message)
@@ -71,21 +71,35 @@ class RobotBridge:
             
             if msg_type == 'tracking':
                 # Extract position and rotation
-                pos = data.get('position', {})
-                rot = data.get('rotation', {})
+                rot_finger = data.get('rotationFinger', {})
+                pos_hand = data.get('positionHand', {})
+                rot_hand = data.get('rotationHand', {})
+                rot_head = data.get('rotationHead', {})
+
                 
-                # Pack data for ESP32 (binary format for efficiency)
+                # Pack data for ESP32 (binary format)
                 # Format: [message_type(1 byte)][pos_x(4)][pos_y(4)][pos_z(4)][rot_x(4)][rot_y(4)][rot_z(4)][rot_w(4)]
+                # Format: [message_type(1 byte)][THUMB(4)][INDEX(4)][MIDDLE(4)][RING(4)][PINKY(4)][Hand_pitch(4)][Hand_yaw(4)][Hand_roll(4)][Hand_x(4)][Hand_y(4)][Hand_z(4)][Head_pitch(4)][Head_yaw(4)][Head_roll(4)]
                 packed = struct.pack(
-                    '<Bfffffff',  # < = little-endian, B = unsigned char, f = float
+                    '<Bfffffffffffff',  # < = little-endian, B = unsigned char, f = float
                     0x01,  # Message type: tracking data
-                    pos.get('x', 0.0),
-                    pos.get('y', 0.0),
-                    pos.get('z', 0.0),
-                    rot.get('x', 0.0),
-                    rot.get('y', 0.0),
-                    rot.get('z', 0.0),
-                    rot.get('w', 1.0)
+                    #fingers
+                    rot_finger.get('t', 0.0), #thumb
+                    rot_finger.get('i', 0.0), #index
+                    rot_finger.get('m', 0.0), #middle
+                    rot_finger.get('r', 0.0), #ring
+                    rot_finger.get('p', 0.0), #pinky
+                    #hand
+                    pos_hand.get('x', 0.0), 
+                    pos_hand.get('y', 0.0), 
+                    pos_hand.get('z', 0.0), 
+                    rot_hand.get('p', 0.0), 
+                    rot_hand.get('y', 0.0),   
+                    rot_hand.get('r', 0.0), 
+                    #head
+                    rot_head.get('p', 0.0), 
+                    rot_head.get('y', 0.0),
+                    rot_head.get('r', 0.0) 
                 )
                 
                 await self.send_to_esp32(packed)
@@ -100,9 +114,9 @@ class RobotBridge:
                 return {'type': 'pong', 'timestamp': datetime.now().isoformat()}
                 
         except json.JSONDecodeError:
-            print(f"✗ Invalid JSON: {message}")
+            print(f"ERR: Invalid JSON: {message}")
         except Exception as e:
-            print(f"✗ Error handling message: {e}")
+            print(f"ERR: Error handling message: {e}")
         
         return None
     
@@ -114,7 +128,7 @@ class RobotBridge:
             elif COMM_MODE == 'udp' and self.udp_socket:
                 self.udp_socket.sendto(data, (ESP32_UDP_IP, ESP32_UDP_PORT))
         except Exception as e:
-            print(f"✗ Error sending to ESP32: {e}")
+            print(f"Error sending to ESP32: {e}")
     
     async def read_from_esp32(self):
         """Read sensor data from ESP32 and broadcast to all clients"""
@@ -140,7 +154,7 @@ class RobotBridge:
                 await asyncio.sleep(0.01)  # 100Hz polling rate
                 
             except Exception as e:
-                print(f"✗ Error reading from ESP32: {e}")
+                print(f"Error reading from ESP32: {e}")
                 await asyncio.sleep(0.1)
     
     def parse_esp32_data(self, line):
@@ -155,22 +169,20 @@ class RobotBridge:
                     key, value = part.split(':', 1)
                     
                     if key == 'FORCE':
-                        data['force'] = float(value)
-                    elif key == 'TEMP':
-                        data['temperature'] = float(value)
-                    elif key == 'POS':
                         coords = value.split(',')
-                        if len(coords) == 3:
+                        if len(coords) == 5:
                             data['position'] = {
-                                'x': float(coords[0]),
-                                'y': float(coords[1]),
-                                'z': float(coords[2])
+                                'Thumb': float(coords[0]),
+                                'Index': float(coords[1]),
+                                'Middle': float(coords[2]),
+                                'Ring': float(coords[3]),
+                                'Pinky': float(coords[4])
                             }
             
             return data if len(data) > 2 else None  # Must have more than just type and timestamp
             
         except Exception as e:
-            print(f"✗ Error parsing ESP32 data: {line} - {e}")
+            print(f"Error parsing ESP32 data: {line} - {e}")
             return None
     
     async def handle_websocket(self, websocket, path):
