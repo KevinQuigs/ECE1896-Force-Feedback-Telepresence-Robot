@@ -259,9 +259,13 @@ class RobotBridge:
 async def main():
     bridge = RobotBridge()
     
-    # Start WebSocket server
+    # Create a wrapper function for the websocket handler
+    async def websocket_handler(websocket, path):
+        await bridge.handle_websocket(websocket, path)
+    
+    # Start WebSocket server with the wrapper
     server = await websockets.serve(
-        bridge.handle_websocket,
+        websocket_handler,
         "0.0.0.0",  # Listen on all interfaces
         WEBSOCKET_PORT
     )
