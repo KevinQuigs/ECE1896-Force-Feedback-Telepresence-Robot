@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """
 WebSocket Bridge Server for Telepresence Robot
 Bridges between browser (WebSocket) and ESP32 (Serial)
@@ -42,13 +43,13 @@ class RobotBridge:
             print(f"Serial connected: {SERIAL_PORT} @ {SERIAL_BAUD} baud")
         except Exception as e:
             print(f"Serial connection failed: {e}")
-            print("  Check: ls /dev/ttyUSB* or ls /dev/ttyACM*")
+            print("Check: ls /dev/ttyUSB* or ls /dev/ttyACM*")
     
     def setup_udp(self):
         """Initialize UDP socket for ESP32"""
         import socket
         self.udp_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        print(f"✓ UDP configured: {ESP32_UDP_IP}:{ESP32_UDP_PORT}")
+        print(f"UDP configured: {ESP32_UDP_IP}:{ESP32_UDP_PORT}")
     
     async def register_client(self, websocket):
         """Register new WebSocket client"""
@@ -63,7 +64,7 @@ class RobotBridge:
     async def handle_client_message(self, message):
         """
         Handle incoming message from browser (VR controller/headset and finger tracking data)
-        Format: {type: 'tracking', position: {x, y, z}, rotation: {x, y, z, w}}
+        Format: {type: 'tracking', rotationFinger : {t, i, m, r, p}, positionHand: {x, y, z}, rotationHand: {p, y, r}, rotationHead: {p, y, r}}
         """
         try:
             data = json.loads(message)
@@ -71,21 +72,34 @@ class RobotBridge:
             
             if msg_type == 'tracking':
                 # Extract position and rotation
-                pos = data.get('position', {})
-                rot = data.get('rotation', {})
+                rot_finger = data.get('rotationFinger', {})
+                pos_hand = data.get('positionHand', {})
+                rot_hand = data.get('rotationHand', {})
+                rot_head = data.get('rotationHead', {})
+
                 
-                # Pack data for ESP32 (binary format for efficiency)
-                # Format: [message_type(1 byte)][pos_x(4)][pos_y(4)][pos_z(4)][rot_x(4)][rot_y(4)][rot_z(4)][rot_w(4)]
+                # Pack data for ESP32 (binary format)
+                # Format: [message_type(1 byte)][THUMB(4)][INDEX(4)][MIDDLE(4)][RING(4)][PINKY(4)][Hand_pitch(4)][Hand_yaw(4)][Hand_roll(4)][Hand_x(4)][Hand_y(4)][Hand_z(4)][Head_pitch(4)][Head_yaw(4)][Head_roll(4)]
                 packed = struct.pack(
-                    '<Bfffffff',  # < = little-endian, B = unsigned char, f = float
+                    '<Bfffffffffffff',  # < = little-endian, B = unsigned char, f = float
                     0x01,  # Message type: tracking data
-                    pos.get('x', 0.0),
-                    pos.get('y', 0.0),
-                    pos.get('z', 0.0),
-                    rot.get('x', 0.0),
-                    rot.get('y', 0.0),
-                    rot.get('z', 0.0),
-                    rot.get('w', 1.0)
+                    #fingers
+                    rot_finger.get('t', 0.0), #thumb
+                    rot_finger.get('i', 0.0), #index
+                    rot_finger.get('m', 0.0), #middle
+                    rot_finger.get('r', 0.0), #ring
+                    rot_finger.get('p', 0.0), #pinky
+                    #hand
+                    pos_hand.get('x', 0.0), 
+                    pos_hand.get('y', 0.0), 
+                    pos_hand.get('z', 0.0), 
+                    rot_hand.get('p', 0.0), 
+                    rot_hand.get('y', 0.0),   
+                    rot_hand.get('r', 0.0), 
+                    #head
+                    rot_head.get('p', 0.0), 
+                    rot_head.get('y', 0.0),
+                    rot_head.get('r', 0.0) 
                 )
                 
                 await self.send_to_esp32(packed)
@@ -100,9 +114,9 @@ class RobotBridge:
                 return {'type': 'pong', 'timestamp': datetime.now().isoformat()}
                 
         except json.JSONDecodeError:
-            print(f"✗ Invalid JSON: {message}")
+            print(f"ERR: Invalid JSON: {message}")
         except Exception as e:
-            print(f"✗ Error handling message: {e}")
+            print(f"ERR: Error handling message: {e}")
         
         return None
     
@@ -114,86 +128,155 @@ class RobotBridge:
             elif COMM_MODE == 'udp' and self.udp_socket:
                 self.udp_socket.sendto(data, (ESP32_UDP_IP, ESP32_UDP_PORT))
         except Exception as e:
-            print(f"✗ Error sending to ESP32: {e}")
+            print(f"Error sending to ESP32: {e}")
     
     async def read_from_esp32(self):
         """Read sensor data from ESP32 and broadcast to all clients"""
+        print("[ESP32 Reader] Starting ESP32 reader task")
         while True:
             try:
-                if COMM_MODE == 'serial' and self.serial_conn and self.serial_conn.in_waiting > 0:
-                    # Read line from ESP32
-                    line = self.serial_conn.readline().decode('utf-8').strip()
-                    
-                    if line:
-                        # Parse sensor data from ESP32
-                        # Expected format: "FORCE:12.5,TEMP:25.3"
-                        sensor_data = self.parse_esp32_data(line)
+                if COMM_MODE == 'serial' and self.serial_conn:
+                    if self.serial_conn.in_waiting > 0:
+                        # Read line from ESP32
+                        line = self.serial_conn.readline().decode('utf-8', errors='ignore').strip()
                         
-                        if sensor_data and self.clients:
-                            # Broadcast to all connected clients
-                            message = json.dumps(sensor_data)
-                            await asyncio.gather(
-                                *[client.send(message) for client in self.clients],
-                                return_exceptions=True
-                            )
+                        if line:
+                            print(f"ESP32 -> Pi: {line}")  # Debug output
+                            
+                            # Parse sensor data from ESP32
+                            sensor_data = self.parse_esp32_data(line)
+                            
+                            if sensor_data and self.clients:
+                                # Broadcast to all connected clients
+                                message = json.dumps(sensor_data)
+                                print(f"Pi -> Browser ({len(self.clients)} clients): {message}")  # Debug output
+                                
+                                # Send to each client individually with error handling
+                                for client in list(self.clients):  # Use list() to avoid set changed during iteration
+                                    try:
+                                        await client.send(message)
+                                    except Exception as e:
+                                        print(f"[ESP32 Reader] Error sending to client: {e}")
+                                        # Don't remove client here, let handle_websocket do it
                 
                 await asyncio.sleep(0.01)  # 100Hz polling rate
                 
+            except serial.SerialException as e:
+                print(f"[ESP32 Reader] Serial error: {e}")
+                await asyncio.sleep(1.0)  # Wait longer on serial errors
             except Exception as e:
-                print(f"✗ Error reading from ESP32: {e}")
+                print(f"[ESP32 Reader] Error reading from ESP32: {e}")
+                import traceback
+                traceback.print_exc()
                 await asyncio.sleep(0.1)
     
     def parse_esp32_data(self, line):
-        """Parse sensor data from ESP32"""
+        """
+        Parse sensor data from ESP32
+        
+        Supported formats:
+        1. Simple analog test: "ANALOG:1234"
+        2. Full force sensors: "FORCE:12.5,34.6,56.7,78.9,90.1"
+        3. Legacy format: "FORCE:12.5,TEMP:25.3"
+        """
         try:
-            # Example format: "FORCE:12.5,TEMP:25.3,POS:1.2,3.4,5.6"
             data = {'type': 'sensor', 'timestamp': datetime.now().isoformat()}
             
-            parts = line.split(',')
-            for part in parts:
-                if ':' in part:
-                    key, value = part.split(':', 1)
-                    
-                    if key == 'FORCE':
-                        data['force'] = float(value)
-                    elif key == 'TEMP':
-                        data['temperature'] = float(value)
-                    elif key == 'POS':
-                        coords = value.split(',')
-                        if len(coords) == 3:
-                            data['position'] = {
-                                'x': float(coords[0]),
-                                'y': float(coords[1]),
-                                'z': float(coords[2])
-                            }
+            # Simple analog value test
+            if line.startswith('ANALOG:'):
+                value_str = line.replace('ANALOG:', '').strip()
+                analog_value = float(value_str)
+                data['analog'] = analog_value
+                print(f"Parsed analog value: {analog_value}")
+                return data
             
-            return data if len(data) > 2 else None  # Must have more than just type and timestamp
+            # Full force sensor data (comma-separated values after FORCE:)
+            elif line.startswith('FORCE:'):
+                values_str = line.replace('FORCE:', '').strip()
+                values = values_str.split(',')
+                
+                if len(values) >= 5:
+                    data['thumb'] = float(values[0])
+                    data['index'] = float(values[1])
+                    data['middle'] = float(values[2])
+                    data['ring'] = float(values[3])
+                    data['pinky'] = float(values[4])
+                    print(f"Parsed force sensors: T={data['thumb']}, I={data['index']}, M={data['middle']}, R={data['ring']}, P={data['pinky']}")
+                    return data
+            
+            # Legacy format (multiple key:value pairs)
+            elif ':' in line:
+                parts = line.split(',')
+                for part in parts:
+                    if ':' in part:
+                        key, value = part.split(':', 1)
+                        
+                        if key == 'THUMB':
+                            data['thumb'] = float(value)
+                        elif key == 'INDEX':
+                            data['index'] = float(value)
+                        elif key == 'MIDDLE':
+                            data['middle'] = float(value)
+                        elif key == 'RING':
+                            data['ring'] = float(value)
+                        elif key == 'PINKY':
+                            data['pinky'] = float(value)
+                        elif key == 'TEMP':
+                            data['temperature'] = float(value)
+                
+                if len(data) > 2:  # More than just type and timestamp
+                    print(f"Parsed legacy format: {data}")
+                    return data
+            
+            return None
             
         except Exception as e:
-            print(f"✗ Error parsing ESP32 data: {line} - {e}")
+            print(f"Error parsing ESP32 data: {line} - {e}")
             return None
+
+
+# Global bridge instance
+bridge = None
+
+async def handle_websocket(websocket):
+    """WebSocket handler function (websockets 14+ uses single parameter)"""
+    global bridge
     
-    async def handle_websocket(self, websocket, path):
-        """Handle WebSocket connection"""
-        await self.register_client(websocket)
-        
-        try:
-            async for message in websocket:
-                response = await self.handle_client_message(message)
-                if response:
-                    await websocket.send(json.dumps(response))
-                    
-        except websockets.exceptions.ConnectionClosed:
-            pass
-        finally:
-            await self.unregister_client(websocket)
+    client_address = websocket.remote_address
+    print(f"[WebSocket] Connection attempt from {client_address}")
+    
+    await bridge.register_client(websocket)
+    
+    try:
+        print(f"[WebSocket] Client {client_address} - Starting message loop")
+        async for message in websocket:
+            print(f"[WebSocket] Received message from {client_address}: {message[:100]}...")  # First 100 chars
+            response = await bridge.handle_client_message(message)
+            if response:
+                await websocket.send(json.dumps(response))
+                
+    except websockets.exceptions.ConnectionClosed as e:
+        print(f"[WebSocket] Connection closed from {client_address}: {e}")
+    except Exception as e:
+        print(f"[WebSocket] Error with client {client_address}: {e}")
+        import traceback
+        traceback.print_exc()
+    finally:
+        print(f"[WebSocket] Cleaning up connection from {client_address}")
+        await bridge.unregister_client(websocket)
+
 
 async def main():
+    global bridge
     bridge = RobotBridge()
     
-    # Start WebSocket server
+    # Start WebSocket server with explicit handler
+    async def websocket_handler(websocket, path):
+        """WebSocket connection handler"""
+        await handle_websocket(websocket, path)
+    
     server = await websockets.serve(
-        bridge.handle_websocket,
+        websocket_handler,
         "0.0.0.0",  # Listen on all interfaces
         WEBSOCKET_PORT
     )
@@ -207,6 +290,11 @@ async def main():
         print(f"Serial: {SERIAL_PORT} @ {SERIAL_BAUD} baud")
     else:
         print(f"UDP: {ESP32_UDP_IP}:{ESP32_UDP_PORT}")
+    print(f"{'='*50}")
+    print(f"\nExpected ESP32 formats:")
+    print(f"  Simple test:  ANALOG:1234")
+    print(f"  Force sensors: FORCE:12.5,34.6,56.7,78.9,90.1")
+    print(f"  Legacy format: THUMB:12.5,INDEX:34.6,...")
     print(f"{'='*50}\n")
     
     # Start ESP32 reader task

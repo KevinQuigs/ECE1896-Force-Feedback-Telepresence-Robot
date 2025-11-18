@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wireless Communication Testbench</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1400px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #1a1a1a;
+            color: #fff;
+        }
+        h1 {
+            text-align: center;
+            color: #4a9eff;
+            margin-bottom: 30px;
+        }
+        .panel {
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        h2 {
+            margin-top: 0;
+            color: #4a9eff;
+            border-bottom: 2px solid #4a9eff;
+            padding-bottom: 10px;
+        }
+        h3 {
+            color: #6ab0ff;
+            margin-top: 15px;
+            margin-bottom: 10px;
+        }
+        input, button {
+            padding: 10px;
+            margin: 5px;
+            border-radius: 4px;
+            border: 1px solid #444;
+            background: #333;
+            color: #fff;
+            font-size: 14px;
+        }
+        button {
+            background: #007bff;
+            cursor: pointer;
+            border: none;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button:disabled {
+            background: #555;
+            cursor: not-allowed;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-family: monospace;
+        }
+        .connected { background: #1e5631; }
+        .disconnected { background: #5c1e1e; }
+        
+        /* Video Section */
+        #videoContainer {
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 20px 0;
+            max-width: 100%;
+        }
+        video {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+        .video-controls {
+            margin-top: 10px;
+        }
+        
+        /* Slider Styles */
+        .slider-container {
+            margin: 10px 0;
+            display: flex;
+            align-items: center;
+        }
+        .slider-container label {
+            display: inline-block;
+            width: 120px;
+            font-weight: 500;
+        }
+        input[type="range"] {
+            flex: 1;
+            max-width: 400px;
+            margin: 0 10px;
+        }
+        .value-display {
+            display: inline-block;
+            width: 80px;
+            text-align: right;
+            font-family: monospace;
+            background: #1a1a1a;
+            padding: 5px 10px;
+            border-radius: 4px;
+        }
+        
+        /* Subsections */
+        .subsection {
+            background: #1f1f1f;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            border-left: 3px solid #4a9eff;
+        }
+        
+        /* Sensor Data Display */
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .sensor-item {
+            background: #1a1a1a;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #444;
+        }
+        .sensor-label {
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+        }
+        .sensor-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4aff4a;
+            font-family: monospace;
+        }
+        
+        /* Message Log */
+        #messages {
+            background: #1a1a1a;
+            border: 1px solid #444;
+            padding: 10px;
+            height: 200px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        .msg-out { color: #4a9eff; }
+        .msg-in { color: #4aff4a; }
+        .msg-error { color: #ff4a4a; }
+        
+        /* Auto-send checkbox */
+        .checkbox-label {
+            display: inline-flex;
+            align-items: center;
+            margin: 10px 0;
+        }
+        .checkbox-label input {
+            margin-right: 8px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Wireless Communication Testbench - Group 1</h1>
+    
+    <!-- Connection Section -->
+    <div class="panel">
+        <h2>Connection</h2>
+        <div>
+            <label>Pi IP Address:</label><br>
+            <input type="text" id="piAddress" placeholder="192.168.1.100" value="192.168.1.100">
+            <button id="connectBtn" onclick="connect()">Connect</button>
+            <button id="disconnectBtn" onclick="disconnect()" disabled class="danger">Disconnect</button>
+        </div>
+        <div id="status" class="status disconnected">Disconnected</div>
+    </div>
+
+    <!-- Video Feed Section -->
+    <div class="panel">
+        <h2>Video Feed</h2>
+        <div id="videoContainer">
+            <video id="video" autoplay playsinline controls muted></video>
+        </div>
+        <div class="video-controls">
+            <button id="videoConnectBtn" onclick="startVideoStream()">Connect Video</button>
+            <button id="videoDisconnectBtn" onclick="stopVideoStream()" disabled>Disconnect Video</button>
+            <span id="videoStatus" style="margin-left: 15px; font-family: monospace;">Not Connected</span>
+        </div>
+    </div>
+
+    <!-- Simulated Tracking Data Section -->
+    <div class="panel">
+        <h2>Simulated Tracking Data</h2>
+        
+        <!-- VR Controller -->
+        <div class="subsection">
+            <h3>Simulated VR Controller</h3>
+            
+            <div class="slider-container">
+                <label>Position X:</label>
+                <input type="range" id="ctrlPosX" min="-180" max="180" step="1" value="0" oninput="updateControllerValues()">
+                <span class="value-display" id="ctrlPosXVal">0.00</span>
+            </div>
+            
+            <div class="slider-container">
+                <label>Position Y:</label>
+                <input type="range" id="ctrlPosY" min="-180" max="180" step="1" value="0" oninput="updateControllerValues()">
+                <span class="value-display" id="ctrlPosYVal">0.00</span>
+            </div>
+            
+            <div class="slider-container">
+                <label>Position Z:</label>
+                <input type="range" id="ctrlPosZ" min="-180" max="180" step="1" value="0" oninput="updateControllerValues()">
+                <span class="value-display" id="ctrlPosZVal">0.00</span>
+            </div>
+            
+            <div class="slider-container">
+                <label>Rotation Pitch:</label>
+                <input type="range" id="ctrlRotPitch" min="-180" max="180" step="1" value="0" oninput="updateControllerValues()">
+                <span class="value-display" id="ctrlRotPitchVal">0°</span>
+            </div>
+            
+            <div class="slider-container">
+                <label>Rotation Yaw:</label>
+                <input type="range" id="ctrlRotYaw" min="-180" max="180" step="1" value="0" oninput="updateControllerValues()">
+                <span class="value-display" id="ctrlRotYawVal">0°</span>
+            </div>
+            
+            <div class="slider-container">
+                <label>Rotation Roll:</label>
+                <input type="range" id="ctrlRotRoll" min="-180" max="180" step="1" value="0" oninput="updateControllerValues()">
+                <span class="value-display" id="ctrlRotRollVal">0°</span>
+            </div>
+        </div>
+
+        <!-- VR Headset -->
+        <div class="subsection">
+            <h3>Simulated VR Headset</h3>
+            
+            <div class="slider-container">
+                <label>Head Pitch:</label>
+                <input type="range" id="headPitch" min="-26" max="26" step="1" value="0" oninput="updateHeadsetValues()">
+                <span class="value-display" id="headPitchVal">0°</span>
+            </div>
+            
+            <div class="slider-container">
+                <label>Head Yaw:</label>
+                <input type="range" id="headYaw" min="0" max="180" step="1" value="90" oninput="updateHeadsetValues()">
+                <span class="value-display" id="headYawVal">90°</span>
+            </div>
+            
+            <div class="slider-container">
+                <label>Head Roll:</label>
+                <input type="range" id="headRoll" min="-16" max="16" step="1" value="0" oninput="updateHeadsetValues()">
+                <span class="value-display" id="headRollVal">0°</span>
+            </div>
+        </div>
+
+        <!-- Force Feedback Glove -->
+        <div class="subsection">
+            <h3>Simulated Force Feedback Glove</h3>
+            
+            <div class="slider-container">
+                <label>Thumb:</label>
+                <input type="range" id="fingerThumb" min="0" max="60" step="1" value="0" oninput="updateGloveValues()">
+                <span class="value-display" id="fingerThumbVal">0°</span>
+            </div>
+            
+            <div class="slider-container">
+                <label>Index:</label>
+                <input type="range" id="fingerIndex" min="0" max="160" step="1" value="0" oninput="updateGloveValues()">
+                <span class="value-display" id="fingerIndexVal">0°</span>
+            </div>
+            
+            <div class="slider-container">
+                <label>Middle:</label>
+                <input type="range" id="fingerMiddle" min="0" max="160" step="1" value="0" oninput="updateGloveValues()">
+                <span class="value-display" id="fingerMiddleVal">0°</span>
+            </div>
+            
+            <div class="slider-container">
+                <label>Ring:</label>
+                <input type="range" id="fingerRing" min="0" max="160" step="1" value="0" oninput="updateGloveValues()">
+                <span class="value-display" id="fingerRingVal">0°</span>
+            </div>
+            
+            <div class="slider-container">
+                <label>Pinky:</label>
+                <input type="range" id="fingerPinky" min="0" max="160" step="1" value="0" oninput="updateGloveValues()">
+                <span class="value-display" id="fingerPinkyVal">0°</span>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px;">
+            <label class="checkbox-label">
+                <input type="checkbox" id="autoSend" checked>
+                Auto-send tracking data (60Hz)
+            </label>
+        </div>
+    </div>
+
+    <!-- Incoming Sensor Data Section -->
+    <div class="panel">
+        <h2>Incoming Sensor Data</h2>
+        <div id="sensorDataContainer">
+            <p style="color: #888; font-style: italic;">Waiting for sensor data from ESP32...</p>
+            <div class="sensor-grid" id="sensorGrid" style="display: none;">
+                <div class="sensor-item">
+                    <div class="sensor-label">Thumb</div>
+                    <div class="sensor-value" id="sensorThumb">--</div>
+                </div>
+                <div class="sensor-item">
+                    <div class="sensor-label">Index</div>
+                    <div class="sensor-value" id="sensorIndex">--</div>
+                </div>
+                <div class="sensor-item">
+                    <div class="sensor-label">Middle</div>
+                    <div class="sensor-value" id="sensorMiddle">--</div>
+                </div>
+                <div class="sensor-item">
+                    <div class="sensor-label">Ring</div>
+                    <div class="sensor-value" id="sensorRing">--</div>
+                </div>
+                <div class="sensor-item">
+                    <div class="sensor-label">Pinky</div>
+                    <div class="sensor-value" id="sensorPinky">--</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Log Section -->
+    <div class="panel">
+        <h2>Message Log</h2>
+        <div id="messages"></div>
+        <button onclick="clearLog()" style="margin-top: 10px;">Clear Log</button>
+    </div>
+
+    <script>
+        // Global variables
+        let ws = null;
+        let pc = null;
+        let sendInterval = null;
+        let videoRestartTimeout = null;
+
+        // Logging function
+        function logMessage(message, type = 'info') {
+            const log = document.getElementById('messages');
+            const time = new Date().toLocaleTimeString();
+            const className = type === 'out' ? 'msg-out' : type === 'in' ? 'msg-in' : 'msg-error';
+            log.innerHTML += `<div class="${className}">[${time}] ${message}</div>`;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('messages').innerHTML = '';
+        }
+
+        // Update status display
+        function updateStatus(connected) {
+            const status = document.getElementById('status');
+            const connectBtn = document.getElementById('connectBtn');
+            const disconnectBtn = document.getElementById('disconnectBtn');
+            
+            if (connected) {
+                status.textContent = 'Connected';
+                status.className = 'status connected';
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                status.textContent = 'Disconnected';
+                status.className = 'status disconnected';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+
+        // WebSocket Connection
+        function connect() {
+            const address = document.getElementById('piAddress').value;
+            
+            try {
+                ws = new WebSocket(`ws://${address}:8080`);
+                
+                ws.onopen = () => {
+                    logMessage('WebSocket connected', 'in');
+                    updateStatus(true);
+                    
+                    if (document.getElementById('autoSend').checked) {
+                        startAutoSend();
+                    }
+                };
+                
+                ws.onmessage = (event) => {
+                    try {
+                        const data = JSON.parse(event.data);
+                        logMessage(`← ${event.data}`, 'in');
+                        
+                        if (data.type === 'sensor') {
+                            updateSensorDisplay(data);
+                        }
+                    } catch (e) {
+                        logMessage(`Error parsing message: ${e}`, 'error');
+                    }
+                };
+                
+                ws.onerror = (error) => {
+                    logMessage(`WebSocket error`, 'error');
+                };
+                
+                ws.onclose = () => {
+                    logMessage('WebSocket disconnected', 'error');
+                    updateStatus(false);
+                    stopAutoSend();
+                };
+                
+            } catch (error) {
+                logMessage(`Connection failed: ${error}`, 'error');
+            }
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+            stopAutoSend();
+        }
+
+        // Update slider value displays
+        function updateControllerValues() {
+            document.getElementById('ctrlPosXVal').textContent = document.getElementById('ctrlPosX').value;
+            document.getElementById('ctrlPosYVal').textContent = document.getElementById('ctrlPosY').value;
+            document.getElementById('ctrlPosZVal').textContent = document.getElementById('ctrlPosZ').value;
+            document.getElementById('ctrlRotPitchVal').textContent = document.getElementById('ctrlRotPitch').value + '°';
+            document.getElementById('ctrlRotYawVal').textContent = document.getElementById('ctrlRotYaw').value + '°';
+            document.getElementById('ctrlRotRollVal').textContent = document.getElementById('ctrlRotRoll').value + '°';
+        }
+
+        function updateHeadsetValues() {
+            document.getElementById('headPitchVal').textContent = document.getElementById('headPitch').value + '°';
+            document.getElementById('headYawVal').textContent = document.getElementById('headYaw').value + '°';
+            document.getElementById('headRollVal').textContent = document.getElementById('headRoll').value + '°';
+        }
+
+        function updateGloveValues() {
+            document.getElementById('fingerThumbVal').textContent = document.getElementById('fingerThumb').value + '°';
+            document.getElementById('fingerIndexVal').textContent = document.getElementById('fingerIndex').value + '°';
+            document.getElementById('fingerMiddleVal').textContent = document.getElementById('fingerMiddle').value + '°';
+            document.getElementById('fingerRingVal').textContent = document.getElementById('fingerRing').value + '°';
+            document.getElementById('fingerPinkyVal').textContent = document.getElementById('fingerPinky').value + '°';
+        }
+
+        // Send tracking data
+        function sendTrackingData() {
+            if (!ws || ws.readyState !== WebSocket.OPEN) return;
+            
+            const data = {
+                type: 'tracking',
+                controller: {
+                    position: {
+                        x: parseFloat(document.getElementById('ctrlPosX').value),
+                        y: parseFloat(document.getElementById('ctrlPosY').value),
+                        z: parseFloat(document.getElementById('ctrlPosZ').value)
+                    },
+                    rotation: {
+                        pitch: parseFloat(document.getElementById('ctrlRotPitch').value),
+                        yaw: parseFloat(document.getElementById('ctrlRotYaw').value),
+                        roll: parseFloat(document.getElementById('ctrlRotRoll').value)
+                    }
+                },
+                headset: {
+                    rotation: {
+                        pitch: parseFloat(document.getElementById('headPitch').value),
+                        yaw: parseFloat(document.getElementById('headYaw').value),
+                        roll: parseFloat(document.getElementById('headRoll').value)
+                    }
+                },
+                glove: {
+                    thumb: parseFloat(document.getElementById('fingerThumb').value),
+                    index: parseFloat(document.getElementById('fingerIndex').value),
+                    middle: parseFloat(document.getElementById('fingerMiddle').value),
+                    ring: parseFloat(document.getElementById('fingerRing').value),
+                    pinky: parseFloat(document.getElementById('fingerPinky').value)
+                }
+            };
+            
+            ws.send(JSON.stringify(data));
+        }
+
+        function startAutoSend() {
+            if (sendInterval) return;
+            sendInterval = setInterval(() => {
+                if (document.getElementById('autoSend').checked) {
+                    sendTrackingData();
+                }
+            }, 1000 / 60); // 60Hz
+        }
+
+        function stopAutoSend() {
+            if (sendInterval) {
+                clearInterval(sendInterval);
+                sendInterval = null;
+            }
+        }
+
+        // Update sensor display
+        function updateSensorDisplay(data) {
+            const grid = document.getElementById('sensorGrid');
+            grid.style.display = 'grid';
+            
+            if (data.thumb !== undefined) document.getElementById('sensorThumb').textContent = data.thumb.toFixed(2);
+            if (data.index !== undefined) document.getElementById('sensorIndex').textContent = data.index.toFixed(2);
+            if (data.middle !== undefined) document.getElementById('sensorMiddle').textContent = data.middle.toFixed(2);
+            if (data.ring !== undefined) document.getElementById('sensorRing').textContent = data.ring.toFixed(2);
+            if (data.pinky !== undefined) document.getElementById('sensorPinky').textContent = data.pinky.toFixed(2);
+        }
+
+        // Video Stream Functions
+        async function startVideoStream() {
+            const piAddress = document.getElementById('piAddress').value;
+            const videoConnectBtn = document.getElementById('videoConnectBtn');
+            const videoDisconnectBtn = document.getElementById('videoDisconnectBtn');
+            const videoStatus = document.getElementById('videoStatus');
+            
+            if (!piAddress) {
+                logMessage('Please enter Pi IP address', 'error');
+                return;
+            }
+
+            videoConnectBtn.disabled = true;
+            videoDisconnectBtn.disabled = false;
+            videoStatus.textContent = 'Connecting...';
+            videoStatus.style.color = '#ff9800';
+            
+            logMessage('Connecting to video stream...', 'info');
+
+            try {
+                pc = new RTCPeerConnection({
+                    iceServers: [{
+                        urls: 'stun:stun.l.google.com:19302'
+                    }]
+                });
+
+                pc.ontrack = (event) => {
+                    logMessage('Video stream received!', 'in');
+                    videoStatus.textContent = 'Connected';
+                    videoStatus.style.color = '#4aff4a';
+                    const video = document.getElementById('video');
+                    video.srcObject = event.streams[0];
+                };
+
+                pc.oniceconnectionstatechange = () => {
+                    logMessage(`Video ICE State: ${pc.iceConnectionState}`, 'info');
+                    if (pc.iceConnectionState === 'failed' || pc.iceConnectionState === 'disconnected') {
+                        logMessage('Video connection lost, attempting to reconnect...', 'error');
+                        videoStatus.textContent = 'Reconnecting...';
+                        videoStatus.style.color = '#ff9800';
+                        stopVideoStream();
+                        videoRestartTimeout = setTimeout(() => startVideoStream(), 2000);
+                    }
+                };
+
+                pc.addTransceiver('video', { direction: 'recvonly' });
+                pc.addTransceiver('audio', { direction: 'recvonly' });
+
+                const offer = await pc.createOffer();
+                await pc.setLocalDescription(offer);
+
+                const response = await fetch(`http://${piAddress}:8889/cam/whep`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/sdp'
+                    },
+                    body: offer.sdp
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const answer = await response.text();
+                await pc.setRemoteDescription(new RTCSessionDescription({
+                    type: 'answer',
+                    sdp: answer
+                }));
+
+                logMessage('Video WebRTC connection established', 'in');
+
+            } catch (err) {
+                logMessage(`Video error: ${err.message}`, 'error');
+                videoConnectBtn.disabled = false;
+                videoDisconnectBtn.disabled = true;
+                videoStatus.textContent = 'Error';
+                videoStatus.style.color = '#ff4a4a';
+                console.error('Video connection error:', err);
+            }
+        }
+
+        function stopVideoStream() {
+            if (videoRestartTimeout) {
+                clearTimeout(videoRestartTimeout);
+                videoRestartTimeout = null;
+            }
+            
+            if (pc) {
+                pc.close();
+                pc = null;
+            }
+            
+            const video = document.getElementById('video');
+            video.srcObject = null;
+            
+            document.getElementById('videoConnectBtn').disabled = false;
+            document.getElementById('videoDisconnectBtn').disabled = true;
+            document.getElementById('videoStatus').textContent = 'Not Connected';
+            document.getElementById('videoStatus').style.color = '#888';
+            
+            logMessage('Video disconnected', 'info');
+        }
+
+        // Cleanup on page unload
+        window.addEventListener('beforeunload', () => {
+            disconnect();
+            stopVideoStream();
+        });
+
+        // Initialize slider displays
+        updateControllerValues();
+        updateHeadsetValues();
+        updateGloveValues();
+    </script>
+</body>
+</html>
