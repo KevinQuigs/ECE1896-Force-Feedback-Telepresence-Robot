@@ -2,6 +2,9 @@ using UnityEngine;
 using UnityEngine.XR;
 using System.Net.Sockets;
 using System.Text;
+using System;
+using static System.Math;
+
 
 public class ControllerTracker : MonoBehaviour
 {   
@@ -41,23 +44,23 @@ public class ControllerTracker : MonoBehaviour
         {
             // Controller angles
             Vector3 handEuler = handRot.eulerAngles;
-            float MP = handEuler.x;
-            float MY = handEuler.y;
-            float MR = handEuler.z;
+            float MP = (float)Math.Round(handEuler.x, 1);
+            float MY = (float)Math.Round(handEuler.y, 1);
+            float MR = (float)Math.Round(handEuler.z, 1);
 
             // Controller position
-            float HX = handPos.x;
-            float HY = handPos.y;
-            float HZ = handPos.z;
+            float HX = (float)Math.Round(handPos.x, 1);
+            float HY = (float)Math.Round(handPos.y, 1);
+            float HZ = (float)Math.Round(handPos.z, 1);
 
             // Headset rotation
             InputDevice head = InputDevices.GetDeviceAtXRNode(XRNode.Head);
             head.TryGetFeatureValue(CommonUsages.deviceRotation, out Quaternion headRot);
             Vector3 headEuler = headRot.eulerAngles;
 
-            float KP = headEuler.x;
-            float KY = headEuler.y;
-            float KR = headEuler.z;
+            float KP = (float)Math.Round(headEuler.x, 1);
+            float KY = (float)Math.Round(headEuler.y, 1);
+            float KR = (float)Math.Round(headEuler.z, 1);
 
             // Final String Format
             string outgoingMsg =
