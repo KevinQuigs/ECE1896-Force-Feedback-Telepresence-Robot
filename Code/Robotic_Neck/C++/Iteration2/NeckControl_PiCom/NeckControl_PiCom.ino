@@ -8,12 +8,16 @@
  * **Added debugging to diagnose communication issues
  */
 #include <ESP32Servo.h>
+#include <esp_now.h>
+#include <WiFi.h>
+
 
 // =============================================================================
 // CONFIGURATION
 // =============================================================================
 
 String haptic_feedback = "";
+String tracking_data = "";
 
 // MAC ADDRESSES FOR HADN AND ARM ESPS
 uint8_t espHand_mac[] = {0xCC, 0xDB, 0xA7, 0x90, 0xB7, 0xA4}; 
@@ -112,7 +116,7 @@ void setup() {
     esp_now_register_recv_cb(onReceive);
 
     addPeer(espHand_mac);
-    addPeer(espARm_mac);
+    addPeer(espArm_mac);
 
     Serial.println("ESP-Neck READY (broadcasting to Glove & Arm)");
     
@@ -180,13 +184,10 @@ void loop() {
     }
     
     // Broadcasting to both ESPS (Will have to adjust input prolly )
-    String input = Serial.readStringUntil('\n');
-    input.trim();
     uint8_t data[200];
-    input.getBytes(data, input.length() + 1);
-
-    esp_now_send(espHand_mac, data, input.length() + 1);
-    esp_now_send(espArm_mac, data, input.length() + 1);
+    tracking_data.getBytes(data, tracking_data.length() + 1);
+    esp_now_send(espHand_mac, data, tracking_data.length() + 1);
+    esp_now_send(espArm_mac, data, tracking_data.length() + 1);
 
     // Control servos
     updateNeckControl();
@@ -263,6 +264,30 @@ void parseTrackingData() {
     memcpy(&trackingData.headRotPitch, &serialBuffer[offset], 4); offset += 4;
     memcpy(&trackingData.headRotYaw, &serialBuffer[offset], 4); offset += 4;
     memcpy(&trackingData.headRotRoll, &serialBuffer[offset], 4); offset += 4;
+
+    // Copy data to string to share with other ESP32 modules
+    /*haptic_feedback = String(trackingData.fingerThumb) + "," +
+                      String(trackingData.fingerIndex) + "," +
+                      String(trackingData.fingerMiddle) + "," +
+                      String(trackingData.fingerRing) + "," +
+                      String(trackingData.fingerPinky);
+    */
+
+    tracking_data = "FT" + String(trackingData.fingerThumb) + "," + 
+                    "FI" + String(trackingData.fingerIndex) + "," +
+                    "FM" + String(trackingData.fingerMiddle) + "," +
+                    "FR" + String(trackingData.fingerRing) + "," +
+                    "FP" + String(trackingData.fingerPinky) + "," +
+                    "MP" + String(trackingData.handRotPitch) + "," +
+                    "MY" + String(trackingData.handRotYaw) + "," +
+                    "MR" + String(trackingData.handRotRoll) + "," +
+                    "HX" + String(trackingData.handPosX) + "," +
+                    "HY" + String(trackingData.handPosY) + "," +
+                    "HZ" + String(trackingData.handPosZ) + "," +
+                    "KP" + String(trackingData.headRotPitch) + "," +
+                    "KY" + String(trackingData.headRotYaw) + "," +
+                    "KR" + String(trackingData.headRotRoll);
+    
     
     // DEBUG: Print ALL parsed values
     if (DEBUG_MODE) {

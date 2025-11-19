@@ -172,14 +172,14 @@
     </style>
 </head>
 <body>
-    <h1>Wireless Communication Testbench - Group 1</h1>
+    <h1>Wireless Communication Testbench</h1>
     
     <!-- Connection Section -->
     <div class="panel">
         <h2>Connection</h2>
         <div>
             <label>Pi IP Address:</label><br>
-            <input type="text" id="piAddress" placeholder="192.168.1.100" value="192.168.1.100">
+            <input type="text" id="piAddress" placeholder="192.168.1.250" value="192.168.1.250">
             <button id="connectBtn" onclick="connect()">Connect</button>
             <button id="disconnectBtn" onclick="disconnect()" disabled class="danger">Disconnect</button>
         </div>
@@ -209,37 +209,37 @@
             
             <div class="slider-container">
                 <label>Position X:</label>
-                <input type="range" id="ctrlPosX" min="-180" max="180" step="1" value="0" oninput="updateControllerValues()">
+                <input type="range" id="ctrlPosX" min="0" max="180" step="1" value="0" oninput="updateControllerValues()">
                 <span class="value-display" id="ctrlPosXVal">0.00</span>
             </div>
             
             <div class="slider-container">
                 <label>Position Y:</label>
-                <input type="range" id="ctrlPosY" min="-180" max="180" step="1" value="0" oninput="updateControllerValues()">
+                <input type="range" id="ctrlPosY" min="0" max="180" step="1" value="0" oninput="updateControllerValues()">
                 <span class="value-display" id="ctrlPosYVal">0.00</span>
             </div>
             
             <div class="slider-container">
                 <label>Position Z:</label>
-                <input type="range" id="ctrlPosZ" min="-180" max="180" step="1" value="0" oninput="updateControllerValues()">
+                <input type="range" id="ctrlPosZ" min="0" max="180" step="1" value="0" oninput="updateControllerValues()">
                 <span class="value-display" id="ctrlPosZVal">0.00</span>
             </div>
             
             <div class="slider-container">
                 <label>Rotation Pitch:</label>
-                <input type="range" id="ctrlRotPitch" min="-180" max="180" step="1" value="0" oninput="updateControllerValues()">
+                <input type="range" id="ctrlRotPitch" min="0" max="180" step="1" value="0" oninput="updateControllerValues()">
                 <span class="value-display" id="ctrlRotPitchVal">0°</span>
             </div>
             
             <div class="slider-container">
                 <label>Rotation Yaw:</label>
-                <input type="range" id="ctrlRotYaw" min="-180" max="180" step="1" value="0" oninput="updateControllerValues()">
+                <input type="range" id="ctrlRotYaw" min="0" max="180" step="1" value="0" oninput="updateControllerValues()">
                 <span class="value-display" id="ctrlRotYawVal">0°</span>
             </div>
             
             <div class="slider-container">
                 <label>Rotation Roll:</label>
-                <input type="range" id="ctrlRotRoll" min="-180" max="180" step="1" value="0" oninput="updateControllerValues()">
+                <input type="range" id="ctrlRotRoll" min="0" max="180" step="1" value="0" oninput="updateControllerValues()">
                 <span class="value-display" id="ctrlRotRollVal">0°</span>
             </div>
         </div>
@@ -250,19 +250,19 @@
             
             <div class="slider-container">
                 <label>Head Pitch:</label>
-                <input type="range" id="headPitch" min="-26" max="26" step="1" value="0" oninput="updateHeadsetValues()">
+                <input type="range" id="headPitch" min="-16" max="26" step="1" value="0" oninput="updateHeadsetValues()">
                 <span class="value-display" id="headPitchVal">0°</span>
             </div>
             
             <div class="slider-container">
                 <label>Head Yaw:</label>
-                <input type="range" id="headYaw" min="0" max="180" step="1" value="90" oninput="updateHeadsetValues()">
+                <input type="range" id="headYaw" min="20" max="160" step="1" value="90" oninput="updateHeadsetValues()">
                 <span class="value-display" id="headYawVal">90°</span>
             </div>
             
             <div class="slider-container">
                 <label>Head Roll:</label>
-                <input type="range" id="headRoll" min="-16" max="16" step="1" value="0" oninput="updateHeadsetValues()">
+                <input type="range" id="headRoll" min="-24" max="24" step="1" value="0" oninput="updateHeadsetValues()">
                 <span class="value-display" id="headRollVal">0°</span>
             </div>
         </div>
@@ -273,39 +273,39 @@
             
             <div class="slider-container">
                 <label>Thumb:</label>
-                <input type="range" id="fingerThumb" min="0" max="60" step="1" value="0" oninput="updateGloveValues()">
+                <input type="range" id="fingerThumb" min="0" max="180" step="1" value="0" oninput="updateGloveValues()">
                 <span class="value-display" id="fingerThumbVal">0°</span>
             </div>
             
             <div class="slider-container">
                 <label>Index:</label>
-                <input type="range" id="fingerIndex" min="0" max="160" step="1" value="0" oninput="updateGloveValues()">
+                <input type="range" id="fingerIndex" min="0" max="180" step="1" value="0" oninput="updateGloveValues()">
                 <span class="value-display" id="fingerIndexVal">0°</span>
             </div>
             
             <div class="slider-container">
                 <label>Middle:</label>
-                <input type="range" id="fingerMiddle" min="0" max="160" step="1" value="0" oninput="updateGloveValues()">
+                <input type="range" id="fingerMiddle" min="0" max="180" step="1" value="0" oninput="updateGloveValues()">
                 <span class="value-display" id="fingerMiddleVal">0°</span>
             </div>
             
             <div class="slider-container">
                 <label>Ring:</label>
-                <input type="range" id="fingerRing" min="0" max="160" step="1" value="0" oninput="updateGloveValues()">
+                <input type="range" id="fingerRing" min="0" max="180" step="1" value="0" oninput="updateGloveValues()">
                 <span class="value-display" id="fingerRingVal">0°</span>
             </div>
             
             <div class="slider-container">
                 <label>Pinky:</label>
-                <input type="range" id="fingerPinky" min="0" max="160" step="1" value="0" oninput="updateGloveValues()">
+                <input type="range" id="fingerPinky" min="0" max="180" step="1" value="0" oninput="updateGloveValues()">
                 <span class="value-display" id="fingerPinkyVal">0°</span>
             </div>
         </div>
 
         <div style="margin-top: 20px;">
             <label class="checkbox-label">
-                <input type="checkbox" id="autoSend" checked>
-                Auto-send tracking data (60Hz)
+                <input type="checkbox" id="autoSend">
+                Auto-send tracking data (60Hz) - Start UNCHECKED for testing
             </label>
         </div>
     </div>
@@ -315,6 +315,20 @@
         <h2>Incoming Sensor Data</h2>
         <div id="sensorDataContainer">
             <p style="color: #888; font-style: italic;">Waiting for sensor data from ESP32...</p>
+            
+            <!-- Simple Test: Single Analog Value -->
+            <div class="subsection" id="simpleTestSection" style="display: none;">
+                <h3>Simple Communication Test</h3>
+                <div class="sensor-item" style="display: inline-block; margin: 10px;">
+                    <div class="sensor-label">Analog Value</div>
+                    <div class="sensor-value" id="sensorAnalog">--</div>
+                </div>
+                <div style="margin-top: 10px; font-size: 12px; color: #888;">
+                    <strong>ESP32 Format:</strong> Send "ANALOG:1234" over serial
+                </div>
+            </div>
+            
+            <!-- Full Sensor Grid -->
             <div class="sensor-grid" id="sensorGrid" style="display: none;">
                 <div class="sensor-item">
                     <div class="sensor-label">Thumb</div>
@@ -390,14 +404,28 @@
         function connect() {
             const address = document.getElementById('piAddress').value;
             
+            if (!address) {
+                logMessage('Please enter Pi IP address', 'error');
+                return;
+            }
+            
+            logMessage(`Attempting to connect to ws://${address}:8080...`, 'info');
+            
             try {
                 ws = new WebSocket(`ws://${address}:8080`);
                 
                 ws.onopen = () => {
-                    logMessage('WebSocket connected', 'in');
+                    logMessage('✓ WebSocket connected successfully!', 'in');
                     updateStatus(true);
                     
+                    // Send a test ping
+                    const pingMsg = JSON.stringify({type: 'ping'});
+                    ws.send(pingMsg);
+                    logMessage('→ Sent ping message', 'out');
+                    
+                    // Don't auto-start sending until user enables it
                     if (document.getElementById('autoSend').checked) {
+                        logMessage('Starting auto-send (60Hz)...', 'info');
                         startAutoSend();
                     }
                 };
@@ -409,24 +437,28 @@
                         
                         if (data.type === 'sensor') {
                             updateSensorDisplay(data);
+                        } else if (data.type === 'pong') {
+                            logMessage('✓ Ping response received', 'in');
                         }
                     } catch (e) {
-                        logMessage(`Error parsing message: ${e}`, 'error');
+                        logMessage(`Error parsing message: ${e.message}`, 'error');
                     }
                 };
                 
                 ws.onerror = (error) => {
-                    logMessage(`WebSocket error`, 'error');
+                    logMessage(`✗ WebSocket error occurred`, 'error');
+                    console.error('WebSocket error:', error);
                 };
                 
-                ws.onclose = () => {
-                    logMessage('WebSocket disconnected', 'error');
+                ws.onclose = (event) => {
+                    logMessage(`✗ WebSocket disconnected (Code: ${event.code}, Reason: ${event.reason || 'No reason given'})`, 'error');
                     updateStatus(false);
                     stopAutoSend();
                 };
                 
             } catch (error) {
-                logMessage(`Connection failed: ${error}`, 'error');
+                logMessage(`✗ Connection failed: ${error.message}`, 'error');
+                console.error('Connection error:', error);
             }
         }
 
@@ -468,31 +500,27 @@
             
             const data = {
                 type: 'tracking',
-                controller: {
-                    position: {
-                        x: parseFloat(document.getElementById('ctrlPosX').value),
-                        y: parseFloat(document.getElementById('ctrlPosY').value),
-                        z: parseFloat(document.getElementById('ctrlPosZ').value)
-                    },
-                    rotation: {
-                        pitch: parseFloat(document.getElementById('ctrlRotPitch').value),
-                        yaw: parseFloat(document.getElementById('ctrlRotYaw').value),
-                        roll: parseFloat(document.getElementById('ctrlRotRoll').value)
-                    }
+                rotationFinger: {
+                    t: parseFloat(document.getElementById('fingerThumb').value),
+                    i: parseFloat(document.getElementById('fingerIndex').value),
+                    m: parseFloat(document.getElementById('fingerMiddle').value),
+                    r: parseFloat(document.getElementById('fingerRing').value),
+                    p: parseFloat(document.getElementById('fingerPinky').value)
                 },
-                headset: {
-                    rotation: {
-                        pitch: parseFloat(document.getElementById('headPitch').value),
-                        yaw: parseFloat(document.getElementById('headYaw').value),
-                        roll: parseFloat(document.getElementById('headRoll').value)
-                    }
+                positionHand: {
+                    x: parseFloat(document.getElementById('ctrlPosX').value),
+                    y: parseFloat(document.getElementById('ctrlPosY').value),
+                    z: parseFloat(document.getElementById('ctrlPosZ').value)
                 },
-                glove: {
-                    thumb: parseFloat(document.getElementById('fingerThumb').value),
-                    index: parseFloat(document.getElementById('fingerIndex').value),
-                    middle: parseFloat(document.getElementById('fingerMiddle').value),
-                    ring: parseFloat(document.getElementById('fingerRing').value),
-                    pinky: parseFloat(document.getElementById('fingerPinky').value)
+                rotationHand: {
+                    p: parseFloat(document.getElementById('ctrlRotPitch').value),
+                    y: parseFloat(document.getElementById('ctrlRotYaw').value),
+                    r: parseFloat(document.getElementById('ctrlRotRoll').value)
+                },
+                rotationHead: {
+                    p: parseFloat(document.getElementById('headPitch').value),
+                    y: parseFloat(document.getElementById('headYaw').value),
+                    r: parseFloat(document.getElementById('headRoll').value)
                 }
             };
             
@@ -517,14 +545,26 @@
 
         // Update sensor display
         function updateSensorDisplay(data) {
-            const grid = document.getElementById('sensorGrid');
-            grid.style.display = 'grid';
+            // Check if we have simple analog test data
+            if (data.analog !== undefined) {
+                const simpleTest = document.getElementById('simpleTestSection');
+                simpleTest.style.display = 'block';
+                document.getElementById('sensorAnalog').textContent = data.analog.toFixed(2);
+            }
             
-            if (data.thumb !== undefined) document.getElementById('sensorThumb').textContent = data.thumb.toFixed(2);
-            if (data.index !== undefined) document.getElementById('sensorIndex').textContent = data.index.toFixed(2);
-            if (data.middle !== undefined) document.getElementById('sensorMiddle').textContent = data.middle.toFixed(2);
-            if (data.ring !== undefined) document.getElementById('sensorRing').textContent = data.ring.toFixed(2);
-            if (data.pinky !== undefined) document.getElementById('sensorPinky').textContent = data.pinky.toFixed(2);
+            // Check if we have full sensor data
+            if (data.thumb !== undefined || data.index !== undefined || 
+                data.middle !== undefined || data.ring !== undefined || 
+                data.pinky !== undefined) {
+                const grid = document.getElementById('sensorGrid');
+                grid.style.display = 'grid';
+                
+                if (data.thumb !== undefined) document.getElementById('sensorThumb').textContent = data.thumb.toFixed(2);
+                if (data.index !== undefined) document.getElementById('sensorIndex').textContent = data.index.toFixed(2);
+                if (data.middle !== undefined) document.getElementById('sensorMiddle').textContent = data.middle.toFixed(2);
+                if (data.ring !== undefined) document.getElementById('sensorRing').textContent = data.ring.toFixed(2);
+                if (data.pinky !== undefined) document.getElementById('sensorPinky').textContent = data.pinky.toFixed(2);
+            }
         }
 
         // Video Stream Functions
