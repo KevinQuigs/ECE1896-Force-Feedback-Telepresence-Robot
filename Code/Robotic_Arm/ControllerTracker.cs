@@ -34,16 +34,41 @@ public class ControllerTracker : MonoBehaviour
     {
         if (!controller.isValid) return; // skip if not ready
 
-        if (controller.TryGetFeatureValue(CommonUsages.devicePosition, out Vector3 position) &&
-            controller.TryGetFeatureValue(CommonUsages.deviceRotation, out Quaternion rotation))
+        bool hasPos = controller.TryGetFeatureValue(CommonUsages.devicePosition, out Vector3 handPos);
+        bool hasRot = controller.TryGetFeatureValue(CommonUsages.deviceRotation, out Quaternion handRot);
+
+        if (hasPos && hasRot)
         {
-            Debug.Log($"{name} Controller - Position: {position}, Rotation: {rotation.eulerAngles}");
+            // Controller angles
+            Vector3 handEuler = handRot.eulerAngles;
+            float MP = handEuler.x;
+            float MY = handEuler.y;
+            float MR = handEuler.z;
+
+            // Controller position
+            float HX = handPos.x;
+            float HY = handPos.y;
+            float HZ = handPos.z;
+
+            // Headset rotation
+            InputDevice head = InputDevices.GetDeviceAtXRNode(XRNode.Head);
+            head.TryGetFeatureValue(CommonUsages.deviceRotation, out Quaternion headRot);
+            Vector3 headEuler = headRot.eulerAngles;
+
+            float KP = headEuler.x;
+            float KY = headEuler.y;
+            float KR = headEuler.z;
+
+            // Final String Format
+            string outgoingMsg =
+                $"MP{MP}MY{MY}MR{MR}" +
+                $"HX{HX}HY{HY}HZ{HZ}" +
+                $"KP{KP}KY{KY}KR{KR}\n";
             
-            //Send over controller tracking info
-            string outgoingMsg = $"Hand:{position}\n";
             byte[] bytes = Encoding.ASCII.GetBytes(outgoingMsg); // Convert to bytes
             stream.Write(bytes, 0, bytes.Length); // Send Message
 
+            // Debug.Log($"{name} Controller - Position: {position}, Rotation: {rotation.eulerAngles}");
             Debug.Log($"Outgoing: {outgoingMsg}");
         }
         else
