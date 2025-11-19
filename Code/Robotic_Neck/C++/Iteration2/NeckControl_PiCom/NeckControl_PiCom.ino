@@ -8,6 +8,9 @@
  * **Added debugging to diagnose communication issues
  */
 #include <ESP32Servo.h>
+#include <esp_now.h>
+#include <WiFi.h>
+
 
 // =============================================================================
 // CONFIGURATION
@@ -113,7 +116,7 @@ void setup() {
     esp_now_register_recv_cb(onReceive);
 
     addPeer(espHand_mac);
-    addPeer(espARm_mac);
+    addPeer(espArm_mac);
 
     Serial.println("ESP-Neck READY (broadcasting to Glove & Arm)");
     
@@ -182,9 +185,9 @@ void loop() {
     
     // Broadcasting to both ESPS (Will have to adjust input prolly )
     uint8_t data[200];
-    tracking_data.getBytes(data, input.length() + 1);
-    esp_now_send(espHand_mac, data, input.length() + 1);
-    esp_now_send(espArm_mac, data, input.length() + 1);
+    tracking_data.getBytes(data, tracking_data.length() + 1);
+    esp_now_send(espHand_mac, data, tracking_data.length() + 1);
+    esp_now_send(espArm_mac, data, tracking_data.length() + 1);
 
     // Control servos
     updateNeckControl();
