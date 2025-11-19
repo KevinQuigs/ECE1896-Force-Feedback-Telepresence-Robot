@@ -132,7 +132,10 @@ function handleClientMessage(message) {
         const msgType = data.type || 'unknown';
 
         if (msgType === 'tracking') {
-            // Extract tracking data
+            
+	    //console.log('Head rotation received: ', data.rotationHead);
+	    
+	    // Extract tracking data
             const rotFinger = data.rotationFinger || {};
             const posHand = data.positionHand || {};
             const rotHand = data.rotationHand || {};
@@ -144,7 +147,13 @@ function handleClientMessage(message) {
             //         [head_p(4)][head_y(4)][head_r(4)]
             const buffer = Buffer.alloc(1 + 14 * 4); // 1 byte + 14 floats
             let offset = 0;
-
+	    
+	    //console.log('Packing values:', {
+		//fingers: [rotFinger.t, rotFinger.i, rotFinger.m, rotFinger.r, rotFinger.p],
+		//handPos: [posHand.x, posHand.y, posHand.z],
+		//handRot: [rotHand.p, rotHand.y, rotHand.r],
+		//headRot: [rotHead.p, rotHead.y, rotHead.r]
+	    //});
             buffer.writeUInt8(0x01, offset); offset += 1;  // Message type
             
             // Fingers
@@ -173,6 +182,8 @@ function handleClientMessage(message) {
             if (serialPort && serialPort.isOpen) {
                 serialPort.write(buffer);
             }
+
+	    
 
         } else if (msgType === 'command') {
             const command = data.command || '';
