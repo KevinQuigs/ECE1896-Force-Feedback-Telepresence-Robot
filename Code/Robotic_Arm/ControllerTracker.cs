@@ -1,55 +1,17 @@
 using UnityEngine;
 using UnityEngine.XR;
-// using System.IO.Ports;
-// using System.Threading;
 using System.Net.Sockets;
 using System.Text;
 
 public class ControllerTracker : MonoBehaviour
 {   
-    // Thread IOThread = new Thread(DataThread);
-    // private static SerialPort sp;
-    // private static string incomingMsg = "";
-    // private static string outgoingMsg = "";
-
     TcpClient client;
     NetworkStream stream;
 
-
-
-
-
-    private InputDevice leftController;
     private InputDevice rightController;
-
-
-    // private static void DataThread()
-    // {
-    //     sp = new SerialPort("COM4", 9600);
-    //     sp.Open();
-
-    //     while(true) {
-    //         if (outgoingMsg != "")
-    //         {
-    //             sp.Write(outgoingMsg);
-    //             outgoingMsg = ""; // otherwise will keep sending data
-    //         }
-
-    //         incomingMsg = sp.ReadExisting();
-
-    //         Thread.Sleep(200);
-    //     } 
-    // }
-
-    // private void OnDestroy()
-    // {
-    //     IOThread.Abort();
-    //     sp.Close();
-    // }
 
     void Start()
     {
-        // IOThread.Start();
         // Connect to TCP server
         client = new TcpClient("127.0.0.1", 5001); // Connects Local Host (Local Machine)
         stream = client.GetStream();
@@ -59,23 +21,12 @@ public class ControllerTracker : MonoBehaviour
     // Called very frame in Unity
     void Update()
     {
-        // if (incomingMsg != "")
-        // {
-        //     Debug.Log($"Incoming {incomingMsg}");
-        // }
 
         // Try to acquire the controllers if they aren't valid yet
-        if (!leftController.isValid)
-        {
-            leftController = InputDevices.GetDeviceAtXRNode(XRNode.LeftHand);
-        }
         if (!rightController.isValid)
-        {
             rightController = InputDevices.GetDeviceAtXRNode(XRNode.RightHand);
-        }
 
         // Only print if the device is valid
-        // TrackController(leftController, "Left");
         TrackController(rightController, "Right");
     }
 

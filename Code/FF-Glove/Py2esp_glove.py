@@ -62,9 +62,12 @@ def main():
 
     # Main loop: concatenate and print messages
     while True:
-        #FT_FI_FM_FR_FP_MP_MY_MP_HX_HY_HZ_KP_KY_KR
+        #FT_FI_FM_FR_FP_MP_MY_MR_HX_HY_HZ_KP_KY_KR
         concatenated = f"ESP: {ESP_DATA} | Unity: {UNITY_DATA}"
         print(concatenated)
+
+        concatenated_data = ESP_DATA + UNITY_DATA
+        print(f"String Sent: {concatenated_data}")
         time.sleep(0.1)  # adjust rate as needed
 
 if __name__ == "__main__":
