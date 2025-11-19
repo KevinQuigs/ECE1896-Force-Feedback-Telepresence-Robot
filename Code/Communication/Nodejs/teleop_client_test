@@ -1,0 +1,124 @@
+"""
+Simple test script to verify TeleopClient can connect to the Pi server
+and send tracking data.
+"""
+
+import asyncio
+import websockets
+import json
+import time
+
+# Configuration 
+PI_IP = '192.168.1.250'
+PI_WEBSOCKET_URL = f'ws://{PI_IP}:8080'
+
+async def simple_test():
+    """Simple connection test with fixed values"""
+    
+    print("=" * 50)
+    print("TeleopClient Simple Test")
+    print("=" * 50)
+    print(f"Connecting to: {PI_WEBSOCKET_URL}")
+    print("=" * 50)
+    
+    try:
+        # Connect to the Pi WebSocket server
+        async with websockets.connect(PI_WEBSOCKET_URL) as ws:
+            print("✓ Connected to Pi!")
+            
+            # Test 1: Send a ping
+            print("\nTest 1: Sending ping...")
+            await ws.send(json.dumps({'type': 'ping'}))
+            response = await ws.recv()
+            print(f"✓ Received: {response}")
+            
+            # Test 2: Send tracking data with fixed values
+            print("\nTest 2: Sending tracking data (5 messages)...")
+            
+            for i in range(5):
+                # Fixed test values - change these to test different positions
+                tracking_data = {
+                    'type': 'tracking',
+                    'rotationFinger': {
+                        't': 30.0,   # thumb
+                        'i': 45.0,   # index
+                        'm': 50.0,   # middle
+                        'r': 40.0,   # ring
+                        'p': 35.0    # pinky
+                    },
+                    'positionHand': {
+                        'x': 0.0,
+                        'y': 0.0,
+                        'z': 0.0
+                    },
+                    'rotationHand': {
+                        'p': 0.0,    # pitch
+                        'y': 0.0,    # yaw
+                        'r': 0.0     # roll
+                    },
+                    'rotationHead': {
+                        'p': 10.0,   # pitch (range: -26 to 26)
+                        'y': 90.0,   # yaw (range: 0 to 180)
+                        'r': 5.0     # roll (range: -16 to 16)
+                    }
+                }
+                
+                await ws.send(json.dumps(tracking_data))
+                print(f"  Sent message {i+1}/5 - Head: P={tracking_data['rotationHead']['p']}, Y={tracking_data['rotationHead']['y']}, R={tracking_data['rotationHead']['r']}")
+                
+                await asyncio.sleep(0.1)  # 100ms between messages
+            
+            # Test 3: Send changing values to see servo movement
+            print("\nTest 3: Sending changing head yaw values (should move yaw servo)...")
+            
+            for yaw in [45, 90, 135, 90]:
+                tracking_data = {
+                    'type': 'tracking',
+                    'rotationFinger': {'t': 0, 'i': 0, 'm': 0, 'r': 0, 'p': 0},
+                    'positionHand': {'x': 0, 'y': 0, 'z': 0},
+                    'rotationHand': {'p': 0, 'y': 0, 'r': 0},
+                    'rotationHead': {
+                        'p': 0.0,
+                        'y': float(yaw),
+                        'r': 0.0
+                    }
+                }
+                
+                await ws.send(json.dumps(tracking_data))
+                print(f"  Sent yaw = {yaw}")
+                await asyncio.sleep(0.5)  # Wait 500ms to see servo move
+            
+            # Test 4: Send changing pitch values
+            print("\nTest 4: Sending changing head pitch values (should move left/right servos)...")
+            
+            for pitch in [-15, 0, 15, 0]:
+                tracking_data = {
+                    'type': 'tracking',
+                    'rotationFinger': {'t': 0, 'i': 0, 'm': 0, 'r': 0, 'p': 0},
+                    'positionHand': {'x': 0, 'y': 0, 'z': 0},
+                    'rotationHand': {'p': 0, 'y': 0, 'r': 0},
+                    'rotationHead': {
+                        'p': float(pitch),
+                        'y': 90.0,
+                        'r': 0.0
+                    }
+                }
+                
+                await ws.send(json.dumps(tracking_data))
+                print(f"  Sent pitch = {pitch}")
+                await asyncio.sleep(0.5)
+            
+            print("\n" + "=" * 50)
+            print("✓ All tests completed!")
+            print("=" * 50)
+            
+    except ConnectionRefusedError:
+        print(f"✗ Connection refused! Is the Node.js server running on {PI_IP}:8080?")
+    except websockets.exceptions.InvalidURI:
+        print(f"✗ Invalid URI: {PI_WEBSOCKET_URL}")
+    except Exception as e:
+        print(f"✗ Error: {e}")
+
+if __name__ == "__main__":
+    # Update PI_IP at the top of this file before running!
+    asyncio.run(simple_test())
