@@ -1,0 +1,28 @@
+from Communication/Nodejs/teleop_client import init_teleop_client, send_tracking, cleanup_teleop
+
+init_teleop_client('192.168.1.250')  # Pi's IP address - dont change
+
+
+# In your main loop where you collect data
+def main_loop():
+    while True:
+        
+        head_pitch, head_yaw, head_roll = get_unity_head_data()
+        hand_x, hand_y, hand_z = get_unity_hand_position()
+        hand_pitch, hand_yaw, hand_roll = get_unity_hand_rotation()
+        
+        
+        thumb, index, middle, ring, pinky = get_glove_data()
+        
+        #Send everything to Pi
+        send_tracking(
+            thumb, index, middle, ring, pinky,
+            hand_x, hand_y, hand_z,
+            hand_pitch, hand_yaw, hand_roll,
+            head_pitch, head_yaw, head_roll
+        )
+        
+        time.sleep(1/60)
+
+# On shutdown
+cleanup_teleop()
