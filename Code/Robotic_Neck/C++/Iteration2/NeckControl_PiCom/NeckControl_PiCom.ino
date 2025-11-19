@@ -13,6 +13,13 @@
 // CONFIGURATION
 // =============================================================================
 
+String haptic_feedback = "";
+
+// MAC ADDRESSES FOR HADN AND ARM ESPS
+uint8_t espHand_mac[] = {0xCC, 0xDB, 0xA7, 0x90, 0xB7, 0xA4}; 
+uint8_t espArm_mac[] = {0xCC, 0xDB, 0xA7, 0x96, 0x60, 0x1C};
+
+
 const int BAUD_RATE = 115200;
 const int SEND_INTERVAL = 50;
 
@@ -77,9 +84,41 @@ unsigned long lastBytesReceived = 0;
 // SETUP
 // =============================================================================
 
+// Callback when receiving feedback from B or C
+void onReceive(const esp_now_recv_info *info, const uint8_t *incoming, int len) {
+  haptic_feedback = String((char*)incoming);
+}
+
+void addPeer(uint8_t *mac) {
+  esp_now_peer_info_t peer{};
+  memcpy(peer.peer_addr, mac, 6);
+  peer.channel = 0;
+  peer.encrypt = false;
+  esp_now_add_peer(&peer);
+}
+
 void setup() {
     Serial.begin(BAUD_RATE);
     delay(1000);
+
+    // ESP NOW SETUP
+    WiFi.mode(WIFI_STA);
+
+    if (esp_now_init() != ESP_OK) {
+        Serial.println("ESP-NOW failed");
+        return;
+    }
+
+    esp_now_register_recv_cb(onReceive);
+
+    addPeer(espHand_mac);
+    addPeer(espARm_mac);
+
+    Serial.println("ESP-Neck READY (broadcasting to Glove & Arm)");
+    
+
+
+
     
     memset(&trackingData, 0, sizeof(TrackingData));
     
@@ -140,6 +179,15 @@ void loop() {
         }
     }
     
+    // Broadcasting to both ESPS (Will have to adjust input prolly )
+    String input = Serial.readStringUntil('\n');
+    input.trim();
+    uint8_t data[200];
+    input.getBytes(data, input.length() + 1);
+
+    esp_now_send(espHand_mac, data, input.length() + 1);
+    esp_now_send(espArm_mac, data, input.length() + 1);
+
     // Control servos
     updateNeckControl();
 }
