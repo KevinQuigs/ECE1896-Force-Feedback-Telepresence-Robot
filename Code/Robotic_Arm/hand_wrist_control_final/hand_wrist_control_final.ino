@@ -3,7 +3,7 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-uint8_t espA_mac[] = {0x38, 0x18, 0x2B, 0xEB, 0x93, 0x14};  // CHANGE TO ESP-A MAC
+uint8_t espA_mac[] = {0xF0, 0x24, 0xF9, 0x5A, 0xC5, 0x7C};  // CHANGE TO ESP-A MAC
 
 String receivedString = "";
 
@@ -26,6 +26,8 @@ void sendFeedback(String msg) {
 
 void onReceive(const esp_now_recv_info *info, const uint8_t *incoming, int len) {
   receivedString = String((char*)incoming);
+  Serial.println(receivedString);
+  
 }
 
 void setup() {
@@ -63,7 +65,9 @@ void moveWristRotate(int a){ wristRotate.write(constrain(a,10,170)); }
 
 void loop() {
 
-  if (receivedString.length() == 0) return;
+  if (receivedString.length() == 0) {
+    return;
+  }
 
   String input = receivedString;
   receivedString = "";
@@ -117,7 +121,8 @@ void loop() {
         }
       }
     }
-
+    
     if (!matched) pos++;
   }
+  
 }

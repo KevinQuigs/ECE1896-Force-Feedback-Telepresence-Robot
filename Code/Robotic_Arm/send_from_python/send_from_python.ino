@@ -6,7 +6,7 @@ String feedback = "";
 
 // MAC ADDRESSES FOR ESP-B & ESP-C
 uint8_t espB_mac[] = {0xCC, 0xDB, 0xA7, 0x90, 0xB7, 0xA4}; 
-uint8_t espC_mac[] = {0x24, 0x6F, 0x28, 0xDD, 0xEE, 0xFF};
+uint8_t espC_mac[] = {0xCC, 0xDB, 0xA7, 0x96, 0x60, 0x1C};
 
 // Callback when receiving feedback from B or C (haptic)
 void onReceive(const esp_now_recv_info *info, const uint8_t *incoming, int len) {
@@ -33,7 +33,8 @@ void setup() {
 
   esp_now_register_recv_cb(onReceive);
 
-  
+  addPeer(espB_mac);
+  addPeer(espC_mac);
 
   Serial.println("ESP-A READY (broadcasting to B & C)");
 }
