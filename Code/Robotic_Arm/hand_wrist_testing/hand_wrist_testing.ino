@@ -17,7 +17,7 @@ int initial_angle = 0;
 int angle = 160;
 
 void setup() {
-  // Serial.begin(115200);
+  Serial.begin(115200);
   thumbF.attach(thumbPin, 500, 2400);
   indexF.attach(indexPin, 500, 2400);
   middleF.attach(middlePin, 500, 2400);
@@ -26,7 +26,7 @@ void setup() {
   wristFlex.attach(wristFlexPin, 500, 2400);
   wristRotate.attach(wristRotatePin, 500, 2400);
   
-  //Serial.println("Initializing servos to 0°...");
+  Serial.println("Initializing servos to 0°...");
 
   // Initialize all angles to 180 (extended out)
   thumbF.write(initial_angle);        
@@ -42,10 +42,15 @@ void setup() {
 
 void loop() {
 
+    Serial.println("Fingers moving to: ");
+    Serial.println(initial_angle);
+
     if (initial_angle <= 60) {
       thumbF.write(initial_angle);   
       delay(500);
     }
+
+    
     indexF.write(initial_angle);      delay(500);
     middleF.write(initial_angle);      delay(500);
     ringF.write(180 - initial_angle);   delay(500);

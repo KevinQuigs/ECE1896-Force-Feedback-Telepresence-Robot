@@ -8,7 +8,7 @@ const int middlePin = 4;
 const int ringPin = 16;
 const int pinkyPin = 17;
 const int wristFlexPin = 5;   // wrist flexion/extension
-const int wristRotatePin = 18;  // wrist rotation
+const int wristRotatePin = 19;  // wrist rotation
 
 Servo thumbF, indexF, middleF, ringF, pinkyF, wristFlex, wristRotate;
 
@@ -34,8 +34,8 @@ void setup() {
   middleF.write(initial_angle);       
   ringF.write(180 - initial_angle);       
   pinkyF.write(180 - initial_angle);      
-  wristFlex.write(100);    
-  wristRotate.write(90);  
+  wristFlex.write(20);    
+  wristRotate.write(160);  
   delay(500);
 
 }
@@ -44,19 +44,26 @@ void loop() {
 
     if (initial_angle <= 60) {
       thumbF.write(initial_angle);   
-      delay(500);
+      
     }
-    indexF.write(initial_angle);      delay(500);
-    // middleF.write(initial_angle);      delay(500);
-    ringF.write(180 - initial_angle);   delay(500);
+    else
+      thumbF.write(initial_angle); 
+    // delay(500);
+
+    indexF.write(initial_angle);      
+    // delay(500);
+    // middleF.write(initial_angle);      
+    // delay(500);
+    ringF.write(180 - initial_angle);   
+    // delay(500);
     pinkyF.write(180 - initial_angle);  
 
     if (initial_angle == angle)
       initial_angle = 180; 
     else
-      initial_angle -= 10;   
+      initial_angle -= 180;   
     
-    delay(500);
+    delay(5000);
 
                      
 }
