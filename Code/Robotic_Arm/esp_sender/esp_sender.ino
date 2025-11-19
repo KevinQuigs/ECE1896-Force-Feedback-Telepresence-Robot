@@ -7,7 +7,7 @@ bool lastState = HIGH;
 uint8_t fingerPositions[5];
 
 // Communicating with ESP 1
-uint8_t peerMac[] = {0xCC, 0xDB, 0xA7, 0x9B, 0x5F, 0x14};
+uint8_t peerMac[] = {0xCC, 0xDB, 0xA7, 0x90, 0xB7, 0xa4};
 
 // Callback for received data
 void onReceive(const esp_now_recv_info_t *info, const uint8_t *data, int len) {

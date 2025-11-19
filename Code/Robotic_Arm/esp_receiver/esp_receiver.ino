@@ -4,7 +4,7 @@
 #define ESPNOW_WIFI_CHANNEL 6
 
 // Communicating with ESP 2
-uint8_t peerMac[] = {0xCC, 0xDB, 0xA7, 0x9D, 0xB6, 0xB0};
+uint8_t peerMac[] = {0x38, 0x18, 0x2B, 0xEB, 0x93, 0x14};
 
 // Callback for received data
 void onReceive(const esp_now_recv_info_t *info, const uint8_t *incomingData, int len) {
