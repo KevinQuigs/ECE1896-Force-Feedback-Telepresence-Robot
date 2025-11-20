@@ -24,8 +24,8 @@ const int bicepServo1 = 12;
 const int bicepServo2 = 13;
 
 // ======================= POT LIMITS =======================
-int shoulderLatMin = 1700;
-int shoulderLatMax = 2250;
+int shoulderLatMin = 1450;
+int shoulderLatMax = 1950;
 
 int shoulderFrontMin = 250;
 int shoulderFrontMax = 1000;
@@ -43,10 +43,10 @@ const float SHOULDER_TO_ELBOW = 0.2794;
 const float ELBOW_TO_HAND = 0.2349;
 
 // ======================= POT/ANGLE CONVERSION CONSTANTS =======================
-// Lateral: 1750 pot = 0°, ranges to ~35° at 2250
-const float LAT_NEUTRAL_POT = 1550.0;
+// Lateral: 1450 pot = 0°, ranges to ~35° at 1950
+const float LAT_NEUTRAL_POT = 1450.0;
 const float LAT_NEUTRAL_ANGLE = 0.0;
-const float LAT_POT_PER_DEGREE = (1950.0 - 1550.0) / 35.0; // ~14.3 pot/degree
+const float LAT_POT_PER_DEGREE = (1950.0 - 1450.0) / 35.0; // ~14.3 pot/degree
 
 // Front: 550 pot = 0°, ranges to ~35° at 1000
 const float FRONT_NEUTRAL_POT = 550.0;

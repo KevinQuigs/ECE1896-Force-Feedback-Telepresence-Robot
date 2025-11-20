@@ -3,13 +3,13 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-uint8_t espA_mac[] = {0xF0, 0x24, 0xF9, 0x5A, 0xC5, 0x7C};  // CHANGE TO ESP-A MAC
+uint8_t espA_mac[] = {0x38, 0x18, 0x2B, 0xEB, 0x93, 0x14};  // CHANGE TO ESP-A MAC
 
 String receivedString = "";
 
 // ==== SERVO SETUP ====
 const int thumbPin = 15, indexPin = 2, middlePin = 4, ringPin = 16;
-const int pinkyPin = 17, wristFlexPin = 5, wristRotatePin = 19;
+const int pinkyPin = 17, wristFlexPin = 5, wristRotatePin = 18;
 
 Servo thumbF, indexF, middleF, ringF, pinkyF, wristFlex, wristRotate;
 
