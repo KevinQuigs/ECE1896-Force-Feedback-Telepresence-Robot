@@ -23,14 +23,18 @@ const int bicepServo1 = 12;
 const int bicepServo2 = 13;
 
 // ======================= POT LIMITS =======================
-int shoulderLatMin = 2050;
-int shoulderLatMax = 2500;
+// int shoulderLatMin = 2050;
+// int shoulderLatMax = 2500;
+int shoulderLatMin = 1700;
+int shoulderLatMax = 2250;
 
-int shoulderFrontMin = 200;
+
+
+int shoulderFrontMin = 700;
 int shoulderFrontMax = 3000;
 
-int shoulderTwistMin = 500;
-int shoulderTwistMax = 3500;
+int shoulderTwistMin = 150;
+int shoulderTwistMax = 4000;
 
 int bicepMin = 200;
 int bicepMax = 1800;
@@ -169,6 +173,32 @@ void setup() {
 }
 
 // ======================= LOOP =======================
+// void loop() {
+//   unsigned long now = millis();
+
+//   // Move joints continuously based on activeCommand
+//   if (activeCommand == "lateral_up") moveLateralUp();
+//   else if (activeCommand == "lateral_down") moveLateralDown();
+//   else if (activeCommand == "front_up") moveFrontUp();
+//   else if (activeCommand == "front_down") moveFrontDown();
+//   else if (activeCommand == "twist_left") moveTwistLeft();
+//   else if (activeCommand == "twist_right") moveTwistRight();
+//   else if (activeCommand == "elbow_up") moveBicepUp();
+//   else if (activeCommand == "elbow_down") moveBicepDown();
+//   else if (activeCommand == "") { // stop_all
+//     stopLateral(); stopFront(); stopTwist(); stopBicep();
+//   }
+
+//   // periodic feedback
+//   if (now - lastSend >= SEND_INTERVAL) {
+//     lastSend = now;
+//     sendPotValues();
+//   }
+
+//   delay(10);
+// }
+
+
 void loop() {
   unsigned long now = millis();
 
@@ -181,9 +211,7 @@ void loop() {
   else if (activeCommand == "twist_right") moveTwistRight();
   else if (activeCommand == "elbow_up") moveBicepUp();
   else if (activeCommand == "elbow_down") moveBicepDown();
-  else if (activeCommand == "") { // stop_all
-    stopLateral(); stopFront(); stopTwist(); stopBicep();
-  }
+  else stopLateral(), stopFront(), stopTwist(), stopBicep(); // stop if unknown or empty
 
   // periodic feedback
   if (now - lastSend >= SEND_INTERVAL) {
