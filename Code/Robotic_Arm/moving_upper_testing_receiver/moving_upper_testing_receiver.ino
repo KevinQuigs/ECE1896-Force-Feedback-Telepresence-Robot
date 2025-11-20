@@ -23,21 +23,19 @@ const int bicepServo1 = 12;
 const int bicepServo2 = 13;
 
 // ======================= POT LIMITS =======================
-// int shoulderLatMin = 2050;
-// int shoulderLatMax = 2500;
-int shoulderLatMin = 1700;
-int shoulderLatMax = 2250;
+int shoulderLatMin = 1550;   // ~0° (actually slightly raised?)
+int shoulderLatMax = 1950;   // ~35° out to right
 
+int shoulderFrontMin = 250;  // (lower than neutral)
+int shoulderFrontMax = 1000; // ~35° forward/up
+// Neutral at 550
 
+int shoulderTwistMin = 150;  // (rotated left)
+int shoulderTwistMax = 4000; // (rotated right)
+// Neutral at 1000
 
-int shoulderFrontMin = 700;
-int shoulderFrontMax = 3000;
-
-int shoulderTwistMin = 150;
-int shoulderTwistMax = 4000;
-
-int bicepMin = 200;
-int bicepMax = 1800;
+int bicepMin = 50;           // 30° (straightest possible)
+int bicepMax = 1800;         // 90° (bent)
 
 // ======================= ACTIVE COMMAND =======================
 String activeCommand = ""; // stores currently active movement
