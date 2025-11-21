@@ -9,7 +9,7 @@ String receivedString = "";
 
 // ==== SERVO SETUP ====
 const int thumbPin = 15, indexPin = 2, middlePin = 4, ringPin = 16;
-const int pinkyPin = 17, wristFlexPin = 5, wristRotatePin = 18;
+const int pinkyPin = 17, wristFlexPin = 12, wristRotatePin = 13;
 
 Servo thumbF, indexF, middleF, ringF, pinkyF, wristFlex, wristRotate;
 

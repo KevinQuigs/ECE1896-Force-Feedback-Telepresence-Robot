@@ -54,8 +54,9 @@ const float FRONT_NEUTRAL_ANGLE = 0.0;
 const float FRONT_POT_PER_DEGREE = (1000.0 - 550.0) / 35.0; // ~12.86 pot/degree
 
 // Twist: 1000 pot = 0° (straight ahead)
-const float TWIST_NEUTRAL_POT = 1000.0;
+const float TWIST_NEUTRAL_POT = 750.0;
 const float TWIST_POT_PER_DEGREE = 4095.0 / 270.0; // 15.17 pot/degree
+// const float TWIST_POT_PER_DEGREE = (3250.0 - 750.0) / 90.0;
 
 // Elbow: 50 pot = 30°, 1800 pot = 90°
 const float ELBOW_MIN_ANGLE = 30.0;
