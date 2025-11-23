@@ -23,7 +23,6 @@ String tracking_data = "";
 uint8_t espHand_mac[] = {0xCC, 0xDB, 0xA7, 0x90, 0xB7, 0xA4}; 
 uint8_t espArm_mac[] = {0xCC, 0xDB, 0xA7, 0x96, 0x60, 0x1C};
 
-
 const int BAUD_RATE = 115200;
 const int SEND_INTERVAL = 50;
 
@@ -68,11 +67,20 @@ struct TrackingData {
     float headRotRoll;
 };
 
+struct ForceSensorData {
+    float thumb;
+    float index;
+    float middle;
+    float ring;
+    float pinky;
+};
+
 // =============================================================================
 // GLOBAL VARIABLES
 // =============================================================================
 
 TrackingData trackingData;
+ForceSensorData forceSensorData;
 
 unsigned long lastSendTime = 0;
 unsigned long lastDebugTime = 0;
@@ -87,19 +95,6 @@ unsigned long lastBytesReceived = 0;
 // =============================================================================
 // SETUP
 // =============================================================================
-
-// Callback when receiving feedback from B or C
-void onReceive(const esp_now_recv_info *info, const uint8_t *incoming, int len) {
-  haptic_feedback = String((char*)incoming);
-}
-
-void addPeer(uint8_t *mac) {
-  esp_now_peer_info_t peer{};
-  memcpy(peer.peer_addr, mac, 6);
-  peer.channel = 0;
-  peer.encrypt = false;
-  esp_now_add_peer(&peer);
-}
 
 void setup() {
     Serial.begin(BAUD_RATE);
@@ -119,10 +114,6 @@ void setup() {
     addPeer(espArm_mac);
 
     Serial.println("ESP-Neck READY (broadcasting to Glove & Arm)");
-    
-
-
-
     
     memset(&trackingData, 0, sizeof(TrackingData));
     
@@ -188,7 +179,8 @@ void loop() {
     tracking_data.getBytes(data, tracking_data.length() + 1);
     esp_now_send(espHand_mac, data, tracking_data.length() + 1);
     esp_now_send(espArm_mac, data, tracking_data.length() + 1);
-
+    
+    sendForceSensorData();
     // Control servos
     updateNeckControl();
 }
@@ -273,19 +265,19 @@ void parseTrackingData() {
                       String(trackingData.fingerPinky);
     */
 
-    tracking_data = "FT" + String(trackingData.fingerThumb) + "," + 
-                    "FI" + String(trackingData.fingerIndex) + "," +
-                    "FM" + String(trackingData.fingerMiddle) + "," +
-                    "FR" + String(trackingData.fingerRing) + "," +
-                    "FP" + String(trackingData.fingerPinky) + "," +
-                    "MP" + String(trackingData.handRotPitch) + "," +
-                    "MY" + String(trackingData.handRotYaw) + "," +
-                    "MR" + String(trackingData.handRotRoll) + "," +
-                    "HX" + String(trackingData.handPosX) + "," +
-                    "HY" + String(trackingData.handPosY) + "," +
-                    "HZ" + String(trackingData.handPosZ) + "," +
-                    "KP" + String(trackingData.headRotPitch) + "," +
-                    "KY" + String(trackingData.headRotYaw) + "," +
+    tracking_data = "FT" + String(trackingData.fingerThumb) + 
+                    "FI" + String(trackingData.fingerIndex) +
+                    "FM" + String(trackingData.fingerMiddle) +
+                    "FR" + String(trackingData.fingerRing) +
+                    "FP" + String(trackingData.fingerPinky) +
+                    "MP" + String(trackingData.handRotPitch) +
+                    "MY" + String(trackingData.handRotYaw) +
+                    "MR" + String(trackingData.handRotRoll) +
+                    "HX" + String(trackingData.handPosX) +
+                    "HY" + String(trackingData.handPosY) +
+                    "HZ" + String(trackingData.handPosZ) +
+                    "KP" + String(trackingData.headRotPitch) +
+                    "KY" + String(trackingData.headRotYaw) +
                     "KR" + String(trackingData.headRotRoll);
     
     
@@ -449,4 +441,44 @@ float solveForDisplacementRoll(float desired_angle) {
 
 float radToDeg(float rad) {
     return (rad * 180 / PI);
+}
+
+// Callback when receiving feedback from B or C
+void onReceive(const esp_now_recv_info *info, const uint8_t *incoming, int len) {
+  haptic_feedback = String((char*)incoming);
+}
+
+void addPeer(uint8_t *mac) {
+  esp_now_peer_info_t peer{};
+  memcpy(peer.peer_addr, mac, 6);
+  peer.channel = 0;
+  peer.encrypt = false;
+  esp_now_add_peer(&peer);
+}
+
+//data coming in in form of "Tf.2, If.2, Mf.2, Rf.1, Pf.2"
+void decodeForceSensors(String data) {
+  int index1 = data.indexOf(',');
+  forceSensorData.thumb = (data.substring(0, index1).toFloat());
+  int index2 = data.indexOf(',', index1 + 1); 
+  forceSensorData.index = (data.substring(index1 + 1, index2).toFloat());
+  int index3 = data.indexOf(',', index2 + 1);
+  forceSensorData.middle = (data.substring(index2 + 1, index3).toFloat());
+  int index4 = data.indexOf(',', index3 + 1);
+  forceSensorData.ring = (data.substring(index3 + 1, index4).toFloat());
+  forceSensorData.pinky = (data.substring(index4 + 1).toFloat());
+}
+
+void sendForceSensorData() {
+    // Send in the format expected by the Node.js server
+    Serial.print("FORCE:");
+    Serial.print(forceSensorData.thumb, 2);
+    Serial.print(",");
+    Serial.print(forceSensorData.index, 2);
+    Serial.print(",");
+    Serial.print(forceSensorData.middle, 2);
+    Serial.print(",");
+    Serial.print(forceSensorData.ring, 2);
+    Serial.print(",");
+    Serial.println(forceSensorData.pinky, 2);
 }

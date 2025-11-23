@@ -1,7 +1,7 @@
 """
 Python WebSocket Client for Telepresence Robot
 Connects to Pi WebSocket server
--Sends tracking data from Unity/ESP32
+-Sends tracking data from Unity/Glove ESP32 to Pi
 -Receives sensor data (force feedback) from Pi
 """
 
@@ -118,83 +118,9 @@ class TeleopClient:
 
 
 # =============================================================================
-# EXAMPLE: How to integrate with your existing code
+# Helper functions for simple integration
 # =============================================================================
 
-async def example_usage():
-    """Example showing how to use the client"""
-    
-    # Create client
-    client = TeleopClient('ws://192.168.1.250:8080')
-    
-    # Optional: Set callback for incoming data (force feedback from robot)
-    def on_sensor_data(data):
-        if data.get('type') == 'sensor':
-            print(f"Force feedback: {data}")
-            # TODO: Send to your force feedback system
-    
-    client.set_receive_callback(on_sensor_data)
-    
-    # Connect
-    if not await client.connect():
-        print("Failed to connect!")
-        return
-    
-    # Start receive loop as background task
-    receive_task = asyncio.create_task(client.receive_loop())
-    
-    # Send tracking data (example loop)
-    try:
-        while True:
-            # Example data - replace with your actual Unity/ESP32 data
-            finger_data = {
-                't': 30.0,   # thumb
-                'i': 45.0,   # index
-                'm': 50.0,   # middle
-                'r': 40.0,   # ring
-                'p': 35.0    # pinky
-            }
-            
-            hand_position = {
-                'x': 0.5,
-                'y': 0.3,
-                'z': 0.2
-            }
-            
-            hand_rotation = {
-                'p': 10.0,   # pitch
-                'y': 45.0,   # yaw
-                'r': 5.0     # roll
-            }
-            
-            head_rotation = {
-                'p': 0.0,    # pitch
-                'y': 90.0,   # yaw
-                'r': 0.0     # roll
-            }
-            
-            # Send to Pi
-            await client.send_tracking_data(
-                finger_data,
-                hand_position,
-                hand_rotation,
-                head_rotation
-            )
-            
-            # ~60Hz update rate
-            await asyncio.sleep(1/60)
-            
-    except KeyboardInterrupt:
-        print("\nStopping...")
-    finally:
-        receive_task.cancel()
-        await client.disconnect()
-
-
-# =============================================================================
-# SIMPLER INTEGRATION: Functions you can call from your existing code
-# =============================================================================
-'''
 # Global client instance
 _client = None
 _loop = None
@@ -274,67 +200,3 @@ def cleanup_teleop():
     if _loop:
         _loop.close()
 
-
-# =============================================================================
-# EXAMPLE: Using the simple functions in your existing code
-# =============================================================================
-
-if __name__ == "__main__":
-    # Example of simple integration
-    
-    def handle_force_feedback(data):
-        """Called when sensor data arrives from robot"""
-        if data.get('type') == 'sensor':
-            print(f"Force feedback received: {data}")
-            # Send to your force feedback hardware here
-    
-    # Initialize connection
-    print("Connecting to Pi...")
-    if init_teleop_client('192.168.1.100', on_receive=handle_force_feedback):
-        print("Connected!")
-        
-        # Your main loop
-        import time
-        try:
-            while True:
-                # Get your data from Unity/ESP32
-                # These would come from your actual sensors
-                thumb = 30.0
-                index = 45.0
-                middle = 50.0
-                ring = 40.0
-                pinky = 35.0
-                
-                hand_x = 0.5
-                hand_y = 0.3
-                hand_z = 0.2
-                hand_pitch = 10.0
-                hand_yaw = 45.0
-                hand_roll = 5.0
-                
-                head_pitch = 0.0
-                head_yaw = 90.0
-                head_roll = 0.0
-                
-                # Send to Pi
-                send_tracking(
-                    thumb, index, middle, ring, pinky,
-                    hand_x, hand_y, hand_z,
-                    hand_pitch, hand_yaw, hand_roll,
-                    head_pitch, head_yaw, head_roll
-                )
-                
-                # Process incoming messages
-                process_incoming()
-                
-                time.sleep(1/60)  # 60Hz
-                
-        except KeyboardInterrupt:
-            print("\nShutting down...")
-        finally:
-            cleanup_teleop()
-    else:
-        print("Failed to connect!")
-        '''
-
-if __name__ == "__main__":
