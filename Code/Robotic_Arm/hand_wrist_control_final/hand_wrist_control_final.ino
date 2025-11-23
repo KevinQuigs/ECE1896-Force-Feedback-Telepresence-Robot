@@ -9,7 +9,7 @@ String receivedString = "";
 
 // ==== SERVO SETUP ====
 const int thumbPin = 15, indexPin = 2, middlePin = 4, ringPin = 16;
-const int pinkyPin = 17, wristFlexPin = 5, wristRotatePin = 19;
+const int pinkyPin = 17, wristFlexPin = 12, wristRotatePin = 13;
 
 Servo thumbF, indexF, middleF, ringF, pinkyF, wristFlex, wristRotate;
 
@@ -26,6 +26,8 @@ void sendFeedback(String msg) {
 
 void onReceive(const esp_now_recv_info *info, const uint8_t *incoming, int len) {
   receivedString = String((char*)incoming);
+  Serial.println(receivedString);
+  
 }
 
 void setup() {
@@ -63,7 +65,9 @@ void moveWristRotate(int a){ wristRotate.write(constrain(a,10,170)); }
 
 void loop() {
 
-  if (receivedString.length() == 0) return;
+  if (receivedString.length() == 0) {
+    return;
+  }
 
   String input = receivedString;
   receivedString = "";
@@ -117,7 +121,8 @@ void loop() {
         }
       }
     }
-
+    
     if (!matched) pos++;
   }
+  
 }

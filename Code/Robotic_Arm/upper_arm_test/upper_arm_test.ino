@@ -14,8 +14,11 @@ const int shoulderTwistServo1 = 18;
 const int shoulderTwistServo2 = 19;
 
 const int bicepPot = 2;
-const int bicepServo1 = 16;
-const int bicepServo2 = 17;
+// const int bicepServo1 = 16;
+// const int bicepServo2 = 17;
+
+const int bicepServo1 = 12;
+const int bicepServo2 = 13;
 
 // ======================= POT LIMITS =======================
 int shoulderLatMin = 2050;
