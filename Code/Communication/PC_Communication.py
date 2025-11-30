@@ -8,7 +8,10 @@ ESP_DATA = ""
 UNITY_DATA = ""
  
 #10.6.24.196 pitt guest wifi
-init_teleop_client('192.168.1.250')  # Pi's IP address - dont change unless on different network
+
+#172.20.10.10 kevin hot
+#192.168.1.250 kev wifi
+init_teleop_client('172.20.10.10')  # Pi's IP address - dont change unless on different network
 
 def handle_force_feedback(data):
         """Called when sensor data arrives from robot"""
@@ -21,7 +24,7 @@ def handle_force_feedback(data):
 def read_esp():
     global ESP_DATA
     try:
-        esp = serial.Serial("COM7", 112500, timeout=1)
+        esp = serial.Serial("COM3", 112500, timeout=1)
     except Exception as e:
         print("Failed to open serial:", e)
         return
@@ -177,24 +180,26 @@ def parse_esp_data(esp_data_str):
 def main():
     global ESP_DATA, UNITY_DATA
     
-    # Start ESP thread
-    threading.Thread(target=read_esp, daemon=True).start()
     
-    # Start Unity TCP server
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind(("0.0.0.0", 5001)) # Listening to all network interfaces on computer, Port 5001 (127.0.0.1 Would be just local machine programs)
-    server.listen(1)
-    print("Waiting for Unity...")
-    conn, _ = server.accept()
-    print("Unity connected")
-
-    # Start Unity reader in a separate thread
-    threading.Thread(target=read_unity, args=(conn,), daemon=True).start()
 
     # Initialize connection to webserver
     print("Connecting to Pi...")
-    if init_teleop_client('192.168.1.250', on_receive=handle_force_feedback):
+    if init_teleop_client('172.20.10.10', on_receive=handle_force_feedback):
         print("Connected!")
+
+        # Start ESP thread
+        threading.Thread(target=read_esp, daemon=True).start()
+        
+        # Start Unity TCP server
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.bind(("0.0.0.0", 5001)) # Listening to all network interfaces on computer, Port 5001 (127.0.0.1 Would be just local machine programs)
+        server.listen(1)
+        print("Waiting for Unity...")
+        conn, _ = server.accept()
+        print("Unity connected")
+
+        # Start Unity reader in a separate thread
+        threading.Thread(target=read_unity, args=(conn,), daemon=True).start()
         
         # Your main loop
         try:

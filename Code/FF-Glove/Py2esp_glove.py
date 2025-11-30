@@ -10,7 +10,7 @@ UNITY_DATA = ""
 def read_esp():
     global ESP_DATA
     try:
-        esp = serial.Serial("COM7", 9600, timeout=1)
+        esp = serial.Serial("COM3", 9600, timeout=1)
     except Exception as e:
         print("Failed to open serial:", e)
         return
@@ -20,11 +20,12 @@ def read_esp():
             line = esp.readline().decode().strip()
             if line:
                 ESP_DATA = line
+                esp.write((ESP_DATA + "\n").encode())
                 # Haptic feedback example
-                if ESP_DATA == "1":
-                    esp.write(b"1\n")
-                else:
-                    esp.write(b"0\n")
+                # if ESP_DATA:
+                #     esp.write(b"1\n")
+                # else:
+                #     esp.write(b"0\n")
         except Exception as e:
             print("ESP read error:", e)
             time.sleep(0.1)
