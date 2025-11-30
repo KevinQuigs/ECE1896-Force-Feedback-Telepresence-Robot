@@ -2,6 +2,7 @@ import serial
 import socket
 import threading
 import time
+import re
 from teleop_client import init_teleop_client, send_tracking, cleanup_teleop, process_incoming
 
 ESP_DATA = ""
@@ -34,13 +35,7 @@ def read_esp():
             line = esp.readline().decode().strip()
             if line:
                 ESP_DATA = line
-                '''
-                # Haptic feedback example
-                if ESP_DATA == "1":
-                    esp.write(b"1\n")
-                else:
-                    esp.write(b"0\n")
-                '''
+                
         except Exception as e:
             print("ESP read error:", e)
             time.sleep(0.1)
@@ -64,7 +59,7 @@ def parse_unity_data(unity_data_str):
     Parse Unity tracking data string and extract values.
     
     Args:
-        unity_data_str: String in format "MP45.23MY12.67MR-8.45HX1.23HY0.56HZ2.34KP15.67KY-5.43KR2.10"
+        unity_data_str: String in format "MP0MY0MR0HX0HY0HZ0KP351.5KY356.7KR8.2"
         
     Returns:
         dict: Dictionary containing all parsed values
@@ -73,49 +68,37 @@ def parse_unity_data(unity_data_str):
         # Define the identifiers in order
         identifiers = ['MP', 'MY', 'MR', 'HX', 'HY', 'HZ', 'KP', 'KY', 'KR']
         
-        values = []
-        remaining = unity_data_str
+        # Use regex to find all identifier-value pairs
+        # Pattern matches: 2 letters followed by optional minus and digits with optional decimal
+        pattern = r'([A-Z]{2})(-?\d+\.?\d*)'
+        matches = re.findall(pattern, unity_data_str)
         
-        for i, identifier in enumerate(identifiers):
-            # Find where this identifier starts
-            start_idx = remaining.find(identifier)
-            if start_idx == -1:
+        # Create a dictionary from matches
+        data_dict = {identifier: float(value) for identifier, value in matches}
+        
+        # Verify all expected identifiers are present
+        for identifier in identifiers:
+            if identifier not in data_dict:
                 raise ValueError(f"Identifier {identifier} not found")
-            
-            # Move past the identifier
-            remaining = remaining[start_idx + len(identifier):]
-            
-            # Find where the next identifier starts (if not the last one)
-            if i < len(identifiers) - 1:
-                next_identifier = identifiers[i + 1]
-                end_idx = remaining.find(next_identifier)
-                if end_idx == -1:
-                    raise ValueError(f"Next identifier {next_identifier} not found")
-                value_str = remaining[:end_idx]
-                remaining = remaining[end_idx:]
-            else:
-                # Last value - take everything remaining
-                value_str = remaining
-            
-            values.append(float(value_str))
         
-        # Map to meaningful variable names
+        # Map to meaningful variable names in the correct order
         unity_data = {
-            'controller_pitch': values[0],
-            'controller_yaw': values[1],
-            'controller_roll': values[2],
-            'controller_x': values[3],
-            'controller_y': values[4],
-            'controller_z': values[5],
-            'headset_pitch': values[6],
-            'headset_yaw': values[7],
-            'headset_roll': values[8]
+            'controller_pitch': data_dict['MP'],
+            'controller_yaw': data_dict['MY'],
+            'controller_roll': data_dict['MR'],
+            'controller_x': data_dict['HX'],
+            'controller_y': data_dict['HY'],
+            'controller_z': data_dict['HZ'],
+            'headset_pitch': data_dict['KP'],
+            'headset_yaw': data_dict['KY'],
+            'headset_roll': data_dict['KR']
         }
         
         return unity_data
         
     except (IndexError, ValueError) as e:
         print(f"Error parsing Unity data: {e}")
+        print(f"Raw data: {unity_data_str}")
         return None
 
 
@@ -124,7 +107,7 @@ def parse_esp_data(esp_data_str):
     Parse ESP32 finger tracking data string and extract values.
     
     Args:
-        esp_data_str: String in format "FT90.12FI85.34FM80.56FR75.78FP70.90"
+        esp_data_str: String in format "FT90.12FI85.34FM80.56FR75.78FP70.90" or "FT90FI85FM80FR75FP70"
         
     Returns:
         dict: Dictionary containing all parsed values
@@ -133,45 +116,33 @@ def parse_esp_data(esp_data_str):
         # Define the identifiers in order
         identifiers = ['FT', 'FI', 'FM', 'FR', 'FP']
         
-        values = []
-        remaining = esp_data_str
+        # Use regex to find all identifier-value pairs
+        # Pattern matches: 2 letters followed by optional minus and digits with optional decimal
+        pattern = r'([A-Z]{2})(-?\d+\.?\d*)'
+        matches = re.findall(pattern, esp_data_str)
         
-        for i, identifier in enumerate(identifiers):
-            # Find where this identifier starts
-            start_idx = remaining.find(identifier)
-            if start_idx == -1:
+        # Create a dictionary from matches
+        data_dict = {identifier: float(value) for identifier, value in matches}
+        
+        # Verify all expected identifiers are present
+        for identifier in identifiers:
+            if identifier not in data_dict:
                 raise ValueError(f"Identifier {identifier} not found")
-            
-            # Move past the identifier
-            remaining = remaining[start_idx + len(identifier):]
-            
-            # Find where the next identifier starts (if not the last one)
-            if i < len(identifiers) - 1:
-                next_identifier = identifiers[i + 1]
-                end_idx = remaining.find(next_identifier)
-                if end_idx == -1:
-                    raise ValueError(f"Next identifier {next_identifier} not found")
-                value_str = remaining[:end_idx]
-                remaining = remaining[end_idx:]
-            else:
-                # Last value - take everything remaining
-                value_str = remaining
-            
-            values.append(float(value_str))
         
         # Map to meaningful variable names
         esp_data = {
-            'thumb': values[0],
-            'index': values[1],
-            'middle': values[2],
-            'ring': values[3],
-            'pinky': values[4]
+            'thumb': data_dict['FT'],
+            'index': data_dict['FI'],
+            'middle': data_dict['FM'],
+            'ring': data_dict['FR'],
+            'pinky': data_dict['FP']
         }
         
         return esp_data
         
     except (IndexError, ValueError) as e:
         print(f"Error parsing ESP data: {e}")
+        print(f"Raw data: {esp_data_str}")
         return None
     
 
@@ -180,8 +151,6 @@ def parse_esp_data(esp_data_str):
 def main():
     global ESP_DATA, UNITY_DATA
     
-    
-
     # Initialize connection to webserver
     print("Connecting to Pi...")
     if init_teleop_client('172.20.10.10', on_receive=handle_force_feedback):
