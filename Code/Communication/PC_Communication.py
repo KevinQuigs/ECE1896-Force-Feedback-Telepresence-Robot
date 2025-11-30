@@ -12,7 +12,9 @@ UNITY_DATA = ""
 
 #172.20.10.10 kevin hot
 #192.168.1.250 kev wifi
-init_teleop_client('172.20.10.10')  # Pi's IP address - dont change unless on different network
+#192.168.1.60 designlab wifi
+#172.20.10.10 kev hotspot
+init_teleop_client('192.168.1.60')  # Pi's IP address - dont change unless on different network
 
 def handle_force_feedback(data):
         """Called when sensor data arrives from robot"""
@@ -153,7 +155,7 @@ def main():
     
     # Initialize connection to webserver
     print("Connecting to Pi...")
-    if init_teleop_client('172.20.10.10', on_receive=handle_force_feedback):
+    if init_teleop_client('192.168.1.60', on_receive=handle_force_feedback):
         print("Connected!")
 
         # Start ESP thread
