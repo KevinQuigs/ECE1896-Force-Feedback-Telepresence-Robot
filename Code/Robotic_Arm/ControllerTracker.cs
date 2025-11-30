@@ -3,80 +3,119 @@ using UnityEngine.XR;
 using System.Net.Sockets;
 using System.Text;
 using System;
-using static System.Math;
-
+using UnityEngine.UI;
 
 public class ControllerTracker : MonoBehaviour
 {   
     TcpClient client;
     NetworkStream stream;
-
     private InputDevice rightController;
+    
+    private WebCamTexture webcamTexture;
 
     void Start()
     {
-        // Connect to TCP server
-        client = new TcpClient("127.0.0.1", 5001); // Connects Local Host (Local Machine)
+        client = new TcpClient("127.0.0.1", 5001);
         stream = client.GetStream();
+
+        webcamTexture = new WebCamTexture("OBS Virtual Camera");
+        
+        // Create Canvas for VR
+        GameObject canvasObj = new GameObject("DesktopCanvas");
+        Canvas canvas = canvasObj.AddComponent<Canvas>();
+        canvas.renderMode = RenderMode.WorldSpace;
+        
+        // Position and scale canvas
+        canvasObj.transform.position = new Vector3(0, 0, 2f);
+        canvasObj.transform.localScale = new Vector3(0.01f, 0.01f, 0.01f);
+        
+        // Set canvas size
+        RectTransform canvasRect = canvasObj.GetComponent<RectTransform>();
+        canvasRect.sizeDelta = new Vector2(1920, 1080);
+        
+        // Create RawImage to display webcam
+        GameObject imageObj = new GameObject("DesktopImage");
+        imageObj.transform.SetParent(canvasObj.transform, false);
+        
+        RawImage rawImage = imageObj.AddComponent<RawImage>();
+        rawImage.texture = webcamTexture;
+        
+        RectTransform imageRect = imageObj.GetComponent<RectTransform>();
+        imageRect.anchorMin = new Vector2(0, 0);
+        imageRect.anchorMax = new Vector2(1, 1);
+        imageRect.sizeDelta = new Vector2(0, 0);
+        imageRect.anchoredPosition = new Vector2(0, 0);
+        
+        webcamTexture.Play();
+        
+        Debug.Log("Available cameras:");
+        foreach(var device in WebCamTexture.devices)
+            Debug.Log(device.name);
     }
 
-
-    // Called very frame in Unity
     void Update()
     {
-
-        // Try to acquire the controllers if they aren't valid yet
         if (!rightController.isValid)
             rightController = InputDevices.GetDeviceAtXRNode(XRNode.RightHand);
 
-        // Only print if the device is valid
         TrackController(rightController, "Right");
     }
 
     private void TrackController(InputDevice controller, string name)
     {
-        if (!controller.isValid) return; // skip if not ready
+        float MP = 0.0f;
+        float MY = 0.0f;
+        float MR = 0.0f;
+        float HX = 0.0f;
+        float HY = 0.0f;
+        float HZ = 0.0f;
+        float KP = 0.0f;
+        float KY = 0.0f;
+        float KR = 0.0f;
 
-        bool hasPos = controller.TryGetFeatureValue(CommonUsages.devicePosition, out Vector3 handPos);
-        bool hasRot = controller.TryGetFeatureValue(CommonUsages.deviceRotation, out Quaternion handRot);
-
-        if (hasPos && hasRot)
+        if (controller.isValid)
         {
-            // Controller angles
-            Vector3 handEuler = handRot.eulerAngles;
-            float MP = (float)Math.Round(handEuler.x, 1);
-            float MY = (float)Math.Round(handEuler.y, 1);
-            float MR = (float)Math.Round(handEuler.z, 1);
+            bool hasPos = controller.TryGetFeatureValue(CommonUsages.devicePosition, out Vector3 handPos);
+            bool hasRot = controller.TryGetFeatureValue(CommonUsages.deviceRotation, out Quaternion handRot);
 
-            // Controller position
-            float HX = (float)Math.Round(handPos.x, 1);
-            float HY = (float)Math.Round(handPos.y, 1);
-            float HZ = (float)Math.Round(handPos.z, 1);
+            if (hasPos && hasRot)
+            {
+                Vector3 handEuler = handRot.eulerAngles;
+                MP = (float)Math.Round(handEuler.x, 1);
+                MY = (float)Math.Round(handEuler.y, 1);
+                MR = (float)Math.Round(handEuler.z, 1);
 
-            // Headset rotation
-            InputDevice head = InputDevices.GetDeviceAtXRNode(XRNode.Head);
-            head.TryGetFeatureValue(CommonUsages.deviceRotation, out Quaternion headRot);
+                HX = (float)Math.Round(handPos.x, 3);
+                HY = (float)Math.Round(handPos.y, 3);
+                HZ = (float)Math.Round(handPos.z, 3);
+            }
+        }
+
+        InputDevice head = InputDevices.GetDeviceAtXRNode(XRNode.Head);
+        if (head.isValid && head.TryGetFeatureValue(CommonUsages.deviceRotation, out Quaternion headRot))
+        {
             Vector3 headEuler = headRot.eulerAngles;
-
-            float KP = (float)Math.Round(headEuler.x, 1);
-            float KY = (float)Math.Round(headEuler.y, 1);
-            float KR = (float)Math.Round(headEuler.z, 1);
-
-            // Final String Format
-            string outgoingMsg =
-                $"MP{MP}MY{MY}MR{MR}" +
-                $"HX{HX}HY{HY}HZ{HZ}" +
-                $"KP{KP}KY{KY}KR{KR}\n";
-            
-            byte[] bytes = Encoding.ASCII.GetBytes(outgoingMsg); // Convert to bytes
-            stream.Write(bytes, 0, bytes.Length); // Send Message
-
-            // Debug.Log($"{name} Controller - Position: {position}, Rotation: {rotation.eulerAngles}");
-            Debug.Log($"Outgoing: {outgoingMsg}");
+            KP = (float)Math.Round(headEuler.x, 1);
+            KY = (float)Math.Round(headEuler.y, 1);
+            KR = (float)Math.Round(headEuler.z, 1);
         }
-        else
-        {
-            Debug.Log($"{name} Controller detected but position/rotation not ready yet");
-        }
+
+        string outgoingMsg =
+            $"MP{MP:0.0}MY{MY:0.0}MR{MR:0.0}" +
+            $"HX{HX:0.000}HY{HY:0.000}HZ{HZ:0.000}" +
+            $"KP{KP:0.0}KY{KY:0.0}KR{KR:0.0}\n";
+        
+        byte[] bytes = Encoding.ASCII.GetBytes(outgoingMsg);
+        stream.Write(bytes, 0, bytes.Length);
+
+        Debug.Log($"Outgoing: {outgoingMsg}");
+    }
+
+    void OnDestroy()
+    {
+        if (webcamTexture != null)
+            webcamTexture.Stop();
+        stream?.Close();
+        client?.Close();
     }
 }
