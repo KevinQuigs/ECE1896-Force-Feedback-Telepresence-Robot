@@ -7,22 +7,35 @@ from teleop_client import init_teleop_client, send_tracking, cleanup_teleop, pro
 
 ESP_DATA = ""
 UNITY_DATA = ""
- 
-#10.6.24.196 pitt guest wifi
+force_feedback_serial = None
 
+#10.6.24.196 pitt guest wifi
 #172.20.10.10 kevin hot
 #192.168.1.250 kev wifi
 #192.168.1.60 designlab wifi
 #172.20.10.10 kev hotspot
 init_teleop_client('192.168.1.60')  # Pi's IP address - dont change unless on different network
 
-def handle_force_feedback(data):
-        """Called when sensor data arrives from robot"""
-        if data.get('type') == 'sensor':
-            print(f"Force feedback received: {data}")
-            # Send to your force feedback hardware here
-            serial.Serial.write(f"FF{data['force_thumb']},{data['force_index']},{data['force_middle']},{data['force_ring']},{data['force_pinky']}\n".encode())
+def init_force_feedback_serial():
+    global force_feedback_serial
+    try:
+        force_feedback_serial = serial.Serial("COM3", 112500, timeout=1)  # Adjust COM port
+        return True
+    except Exception as e:
+        print(f"Failed to open force feedback serial: {e}")
+        return False
 
+def handle_force_feedback(data):
+    """Called when sensor data arrives from robot"""
+    global force_feedback_serial
+    if data.get('type') == 'sensor':
+        print(f"Force feedback received: {data}")
+        # Send to your force feedback hardware here
+        try:
+            if force_feedback_serial and force_feedback_serial.is_open:
+                force_feedback_serial.write(f"FF{data['force_thumb']},{data['force_index']},{data['force_middle']},{data['force_ring']},{data['force_pinky']}\n".encode())
+        except Exception as e:
+            print(f"Error sending force feedback: {e}")
 # --- Read ESP32 serial in a thread ---
 def read_esp():
     global ESP_DATA
@@ -129,8 +142,6 @@ def parse_esp_data(esp_data_str):
         print(f"Raw data: '{esp_data_str}'")
         return None  
 
-
-
 def main():
     global ESP_DATA, UNITY_DATA
     
@@ -144,7 +155,7 @@ def main():
         
         # Start Unity TCP server
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        server.bind(("0.0.0.0", 5001)) # Listening to all network interfaces on computer, Port 5001 (127.0.0.1 Would be just local machine programs)
+        server.bind(("0.0.0.0", 5001))
         server.listen(1)
         print("Waiting for Unity...")
         conn, _ = server.accept()
@@ -153,25 +164,43 @@ def main():
         # Start Unity reader in a separate thread
         threading.Thread(target=read_unity, args=(conn,), daemon=True).start()
         
+        # Wait for initial data
+        print("Waiting for initial data...")
+        while not ESP_DATA or not UNITY_DATA:
+            time.sleep(0.1)
+        
         # Your main loop
         try:
+            last_successful_send = time.time()
             while True:
-                
-                unity_data_dict = parse_unity_data(UNITY_DATA)
-                esp_data_dict = parse_esp_data(ESP_DATA)
-                if not unity_data_dict or not esp_data_dict:
-                    time.sleep(0.01)
-                    continue 
+                try:
+                    unity_data_dict = parse_unity_data(UNITY_DATA)
+                    esp_data_dict = parse_esp_data(ESP_DATA)
+                    
+                    if not unity_data_dict or not esp_data_dict:
+                        # Skip this iteration if parsing failed
+                        time.sleep(0.01)
+                        continue 
 
-                # Send to Pi
-                send_tracking(
-                    esp_data_dict['thumb'], esp_data_dict['index'], esp_data_dict['middle'], esp_data_dict['ring'], esp_data_dict['pinky'],
-                    unity_data_dict['controller_x'], unity_data_dict['controller_y'], unity_data_dict['controller_z'],
-                    unity_data_dict['controller_pitch'], unity_data_dict['controller_yaw'], unity_data_dict['controller_roll'],
-                    unity_data_dict['headset_pitch'], unity_data_dict['headset_yaw'], unity_data_dict['headset_roll']
-                )
-                # Process incoming messages
-                process_incoming()
+                    # Send to Pi
+                    send_tracking(
+                        esp_data_dict['thumb'], esp_data_dict['index'], esp_data_dict['middle'], esp_data_dict['ring'], esp_data_dict['pinky'],
+                        unity_data_dict['controller_x'], unity_data_dict['controller_y'], unity_data_dict['controller_z'],
+                        unity_data_dict['controller_pitch'], unity_data_dict['controller_yaw'], unity_data_dict['controller_roll'],
+                        unity_data_dict['headset_pitch'], unity_data_dict['headset_yaw'], unity_data_dict['headset_roll']
+                    )
+                    last_successful_send = time.time()
+                    
+                    # Process incoming messages
+                    process_incoming()
+                    
+                except Exception as e:
+                    print(f"Error in main loop: {e}")
+                    # Check if we've been unable to send for too long
+                    if time.time() - last_successful_send > 5.0:
+                        print("No successful sends for 5 seconds, reconnecting...")
+                        break
+                
                 time.sleep(1/60)  # 60Hz
                 
         except KeyboardInterrupt:
