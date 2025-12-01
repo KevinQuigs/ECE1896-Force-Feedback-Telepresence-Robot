@@ -41,7 +41,6 @@ void loop() {
 
   Serial.print(",");
   Serial.println(pinky);   // newline at the very end
-  Serial.print(",");
 
   delay(20);
 }
