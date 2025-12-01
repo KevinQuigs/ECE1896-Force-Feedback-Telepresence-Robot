@@ -90,6 +90,8 @@ class FingerControlGUI(QWidget):
             # Send as comma-separated values: "90,45,120,80,60,90,45\n"
             # Order: Thumb, Index, Middle, Ring, Pinky, WristFlex, WristRotate
             data = ",".join(str(angle) for angle in self.angles) + "\n"
+
+            # data = "0,0,0,0,0,0,0,0,0.00,0,0,0,0,0" + "\n"
             self.serial_conn.write(data.encode())
             print(f"Sent: {data.strip()}")
         else:

@@ -26,8 +26,8 @@ void sendFeedback(String msg) {
 
 void onReceive(const esp_now_recv_info *info, const uint8_t *incoming, int len) {
   receivedString = String((char*)incoming);
+  Serial.print("Received: ");
   Serial.println(receivedString);
-  
 }
 
 void setup() {
@@ -73,33 +73,50 @@ void loop() {
   receivedString = "";
   input.trim();
 
-  // Expected format: "angle1,angle2,angle3,angle4,angle5,angle6,angle7"
-  // Order: Thumb, Index, Middle, Ring, Pinky, WristFlex, WristRotate
+  // Expected format: "angle1,angle2,angle3,angle4,angle5,angle6,angle7,..."
+  // Can handle both integers and floats
+  // Order: Thumb, Index, Middle, Ring, Pinky, WristFlex, WristRotate, (Unity data...)
 
-  int values[NUM_SERVOS];
+  int values[50];  // Store as integers for servos
   int valueCount = 0;
   int pos = 0;
 
-  // Parse comma-separated values
-  while (pos < input.length() && valueCount < NUM_SERVOS) {
+  // Parse ALL comma-separated values (handles floats by converting to int)
+  while (pos < input.length()) {
     int start = pos;
     
-    // Read digits (and optional negative sign)
-    if (input[pos] == '-') pos++;
-    while (pos < input.length() && isDigit(input[pos])) pos++;
+    // Skip any whitespace
+    while (pos < input.length() && input[pos] == ' ') pos++;
+    start = pos;
+    
+    // Read number (handles negative sign, digits, and decimal point)
+    if (pos < input.length() && input[pos] == '-') pos++;
+    while (pos < input.length() && (isDigit(input[pos]) || input[pos] == '.')) pos++;
     
     if (pos > start) {
-      values[valueCount] = input.substring(start, pos).toInt();
+      // Convert to float first, then to int (truncates decimal)
+      String numStr = input.substring(start, pos);
+      float floatVal = numStr.toFloat();
+      values[valueCount] = (int)floatVal;
       valueCount++;
     }
     
-    // Skip comma
-    if (pos < input.length() && input[pos] == ',') {
+    // Skip comma and any whitespace
+    while (pos < input.length() && (input[pos] == ',' || input[pos] == ' ')) {
       pos++;
     }
   }
 
-  // Apply values to servos in order
+  Serial.print("Parsed ");
+  Serial.print(valueCount);
+  Serial.print(" values: ");
+  for (int i = 0; i < valueCount; i++) {
+    Serial.print(values[i]);
+    if (i < valueCount - 1) Serial.print(",");
+  }
+  Serial.println();
+
+  // Apply ONLY the first 7 values to servos
   if (valueCount > 0 && values[0] >= 0) moveThumb(values[0]);
   if (valueCount > 1 && values[1] >= 0) moveIndex(values[1]);
   if (valueCount > 2 && values[2] >= 0) moveMiddle(values[2]);
@@ -108,11 +125,11 @@ void loop() {
   if (valueCount > 5 && values[5] >= 0) moveWristFlex(values[5]);
   if (valueCount > 6 && values[6] >= 0) moveWristRotate(values[6]);
 
-  // Send feedback
+  // Send feedback with first 7 values
   String feedback = "OK ";
-  for (int i = 0; i < valueCount; i++) {
+  for (int i = 0; i < min(valueCount, NUM_SERVOS); i++) {
     feedback += String(values[i]);
-    if (i < valueCount - 1) feedback += ",";
+    if (i < min(valueCount, NUM_SERVOS) - 1) feedback += ",";
   }
   sendFeedback(feedback);
 }

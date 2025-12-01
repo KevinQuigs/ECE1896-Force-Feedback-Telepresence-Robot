@@ -3,31 +3,19 @@ import socket
 import threading
 import time
 
-ESP_DATA = ""
+ESP_GLOVE_DATA = ""
 UNITY_DATA = ""
 
-# --- Read ESP32 serial in a thread ---
-def read_esp():
-    global ESP_DATA
-    try:
-        esp = serial.Serial("COM3", 112500, timeout=1)
-    except Exception as e:
-        print("Failed to open serial:", e)
-        return
-
+# --- Read ESP32 Glove serial in a thread ---
+def read_esp_glove(esp_glove):
+    global ESP_GLOVE_DATA
     while True:
         try:
-            line = esp.readline().decode().strip()
+            line = esp_glove.readline().decode().strip()
             if line:
-                ESP_DATA = line
-                esp.write((ESP_DATA + "\n").encode())
-                # Haptic feedback example
-                # if ESP_DATA:
-                #     esp.write(b"1\n")
-                # else:
-                #     esp.write(b"0\n")
+                ESP_GLOVE_DATA = line
         except Exception as e:
-            print("ESP read error:", e)
+            print("ESP Glove read error:", e)
             time.sleep(0.1)
 
 # --- Read Unity TCP in a thread ---
@@ -44,14 +32,30 @@ def read_unity(conn):
             break
 
 def main():
-    global ESP_DATA, UNITY_DATA
+    global ESP_GLOVE_DATA, UNITY_DATA
 
-    # Start ESP thread
-    threading.Thread(target=read_esp, daemon=True).start()
+    # Open ESP32 Glove serial connection (reads potentiometer data)
+    try:
+        esp_glove = serial.Serial("COM3", 115200, timeout=1)
+        print("ESP32 Glove connected on COM3")
+    except Exception as e:
+        print("Failed to open ESP Glove serial:", e)
+        return
+
+    # Open ESP32 Hand serial connection (sends concatenated data)
+    try:
+        esp_hand = serial.Serial("COM9", 115200, timeout=1)  # Change COM port as needed
+        print("ESP32 Hand connected on COM9")
+    except Exception as e:
+        print("Failed to open ESP Hand serial:", e)
+        return
+
+    # Start ESP Glove reader thread
+    threading.Thread(target=read_esp_glove, args=(esp_glove,), daemon=True).start()
 
     # Start Unity TCP server
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind(("0.0.0.0", 5001)) # Listening to all network interfaces on computer, Port 5001 (127.0.0.1 Would be just local machine programs)
+    server.bind(("0.0.0.0", 5001))
     server.listen(1)
     print("Waiting for Unity...")
 
@@ -61,15 +65,19 @@ def main():
     # Start Unity reader in a separate thread
     threading.Thread(target=read_unity, args=(conn,), daemon=True).start()
 
-    # Main loop: concatenate and print messages
+    # Main loop: concatenate and send to ESP Hand
     while True:
-        #FT_FI_FM_FR_FP_MP_MY_MR_HX_HY_HZ_KP_KY_KR
-        concatenated = f"ESP: {ESP_DATA} | Unity: {UNITY_DATA}"
-        print(concatenated)
-
-        concatenated_data = ESP_DATA + UNITY_DATA
-        print(f"String Sent: {concatenated_data}")
-        time.sleep(.01)  # adjust rate as needed
+        # Concatenate ESP Glove pot data with Unity data
+        concatenated_data = ESP_GLOVE_DATA + "," + UNITY_DATA if UNITY_DATA else ESP_GLOVE_DATA
+        
+        # Send concatenated string to ESP Hand
+        if concatenated_data:
+            esp_hand.write((concatenated_data + "\n").encode())
+        
+        # Debug print
+        print(f"Glove: {ESP_GLOVE_DATA} | Unity: {UNITY_DATA} | Sent to Hand: {concatenated_data}")
+        
+        time.sleep(0.01)  # adjust rate as needed
 
 if __name__ == "__main__":
     main()
