@@ -6,6 +6,7 @@
 // ======= CHANGE THIS TO SENDER MAC =======
 uint8_t senderMAC[] = {0x38, 0x18, 0x2B, 0xEB, 0x93, 0x14};
 
+// Calculate end effector position from joint angles
 struct Vector3 {
   float x, y, z;
 };
@@ -123,7 +124,6 @@ void updateCurrentAngles() {
 }
 
 // ======================= FORWARD KINEMATICS =======================
-// Calculate end effector position from joint angles
 
 
 Vector3 forwardKinematics(JointAngles angles) {

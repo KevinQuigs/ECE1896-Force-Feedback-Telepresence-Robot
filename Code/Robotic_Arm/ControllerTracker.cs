@@ -81,9 +81,9 @@ public class ControllerTracker : MonoBehaviour
             if (hasPos && hasRot)
             {
                 Vector3 handEuler = handRot.eulerAngles;
-                MP = (float)Math.Round(handEuler.x, 1);
-                MY = (float)Math.Round(handEuler.y, 1);
-                MR = (float)Math.Round(handEuler.z, 1);
+                MP = (float)Math.Round(handEuler.x, 3);
+                MY = (float)Math.Round(handEuler.y, 3);
+                MR = (float)Math.Round(handEuler.z, 3);
 
                 HX = (float)Math.Round(handPos.x, 3);
                 HY = (float)Math.Round(handPos.y, 3);
@@ -95,19 +95,18 @@ public class ControllerTracker : MonoBehaviour
         if (head.isValid && head.TryGetFeatureValue(CommonUsages.deviceRotation, out Quaternion headRot))
         {
             Vector3 headEuler = headRot.eulerAngles;
-            KP = (float)Math.Round(headEuler.x, 1);
-            KY = (float)Math.Round(headEuler.y, 1);
-            KR = (float)Math.Round(headEuler.z, 1);
+            KP = (float)Math.Round(headEuler.x, 3);
+            KY = (float)Math.Round(headEuler.y, 3);
+            KR = (float)Math.Round(headEuler.z, 3);
         }
 
         string outgoingMsg =
-            $"MP{MP:0.0}MY{MY:0.0}MR{MR:0.0}" +
-            $"HX{HX:0.000}HY{HY:0.000}HZ{HZ:0.000}" +
-            $"KP{KP:0.0}KY{KY:0.0}KR{KR:0.0}\n";
+            $"{MP:0.000},{MY:0.000},{MR:0.000}," +
+            $"{HX:0.000},{HY:0.000},{HZ:0.000}," +
+            $"{KP:0.000},{KY:0.000},{KR:0.000}\n";
         
         byte[] bytes = Encoding.ASCII.GetBytes(outgoingMsg);
         stream.Write(bytes, 0, bytes.Length);
-
         Debug.Log($"Outgoing: {outgoingMsg}");
     }
 

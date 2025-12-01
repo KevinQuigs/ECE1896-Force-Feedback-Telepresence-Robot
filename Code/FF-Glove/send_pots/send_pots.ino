@@ -27,20 +27,21 @@ void loop() {
   int pinky  = convert_pot2ang(analogRead(POT_PINKY),  0, 180, 580, 1000);
 
   // Format: FTxxFIxxFMxxFRxxFPxx
-  Serial.print("FT");
+  // Serial.print("FT");
   Serial.print(thumb);
 
-  Serial.print("FI");
+  Serial.print(",");
   Serial.print(index);
 
-  Serial.print("FM");
+  Serial.print(",");
   Serial.print(middle);
 
-  Serial.print("FR");
+  Serial.print(",");
   Serial.print(ring);
 
-  Serial.print("FP");
+  Serial.print(",");
   Serial.println(pinky);   // newline at the very end
+  Serial.print(",");
 
   delay(20);
 }
