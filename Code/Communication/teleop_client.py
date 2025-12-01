@@ -107,7 +107,7 @@ class TeleopClient:
                 message = await asyncio.wait_for(self.websocket.recv(), timeout=1.0)
                 data = json.loads(message)
                 
-                print(f"Pi -> PC: {message}")
+                #print(f"Pi -> PC: {message}")
                 
                 # Call callback if set
                 if self.receive_callback:
