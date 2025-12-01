@@ -179,7 +179,7 @@
         <h2>Connection</h2>
         <div>
             <label>Pi IP Address:</label><br>
-            <input type="text" id="piAddress" placeholder="192.168.1.250" value="192.168.1.250">
+            <input type="text" id="piAddress" placeholder="192.168.1.100" value="192.168.1.100">
             <button id="connectBtn" onclick="connect()">Connect</button>
             <button id="disconnectBtn" onclick="disconnect()" disabled class="danger">Disconnect</button>
         </div>
@@ -209,37 +209,37 @@
             
             <div class="slider-container">
                 <label>Position X:</label>
-                <input type="range" id="ctrlPosX" min="0" max="180" step="1" value="0" oninput="updateControllerValues()">
+                <input type="range" id="ctrlPosX" min="-1" max="1" step="0.01" value="0" oninput="updateControllerValues()">
                 <span class="value-display" id="ctrlPosXVal">0.00</span>
             </div>
             
             <div class="slider-container">
                 <label>Position Y:</label>
-                <input type="range" id="ctrlPosY" min="0" max="180" step="1" value="0" oninput="updateControllerValues()">
+                <input type="range" id="ctrlPosY" min="-1" max="1" step="0.01" value="0" oninput="updateControllerValues()">
                 <span class="value-display" id="ctrlPosYVal">0.00</span>
             </div>
             
             <div class="slider-container">
                 <label>Position Z:</label>
-                <input type="range" id="ctrlPosZ" min="0" max="180" step="1" value="0" oninput="updateControllerValues()">
+                <input type="range" id="ctrlPosZ" min="-1" max="1" step="0.01" value="0" oninput="updateControllerValues()">
                 <span class="value-display" id="ctrlPosZVal">0.00</span>
             </div>
             
             <div class="slider-container">
                 <label>Rotation Pitch:</label>
-                <input type="range" id="ctrlRotPitch" min="0" max="180" step="1" value="0" oninput="updateControllerValues()">
+                <input type="range" id="ctrlRotPitch" min="-180" max="180" step="1" value="0" oninput="updateControllerValues()">
                 <span class="value-display" id="ctrlRotPitchVal">0°</span>
             </div>
             
             <div class="slider-container">
                 <label>Rotation Yaw:</label>
-                <input type="range" id="ctrlRotYaw" min="0" max="180" step="1" value="0" oninput="updateControllerValues()">
+                <input type="range" id="ctrlRotYaw" min="-180" max="180" step="1" value="0" oninput="updateControllerValues()">
                 <span class="value-display" id="ctrlRotYawVal">0°</span>
             </div>
             
             <div class="slider-container">
                 <label>Rotation Roll:</label>
-                <input type="range" id="ctrlRotRoll" min="0" max="180" step="1" value="0" oninput="updateControllerValues()">
+                <input type="range" id="ctrlRotRoll" min="-180" max="180" step="1" value="0" oninput="updateControllerValues()">
                 <span class="value-display" id="ctrlRotRollVal">0°</span>
             </div>
         </div>
@@ -250,19 +250,19 @@
             
             <div class="slider-container">
                 <label>Head Pitch:</label>
-                <input type="range" id="headPitch" min="-16" max="26" step="1" value="0" oninput="updateHeadsetValues()">
+                <input type="range" id="headPitch" min="-26" max="26" step="1" value="0" oninput="updateHeadsetValues()">
                 <span class="value-display" id="headPitchVal">0°</span>
             </div>
             
             <div class="slider-container">
                 <label>Head Yaw:</label>
-                <input type="range" id="headYaw" min="20" max="160" step="1" value="90" oninput="updateHeadsetValues()">
+                <input type="range" id="headYaw" min="0" max="180" step="1" value="90" oninput="updateHeadsetValues()">
                 <span class="value-display" id="headYawVal">90°</span>
             </div>
             
             <div class="slider-container">
                 <label>Head Roll:</label>
-                <input type="range" id="headRoll" min="-24" max="24" step="1" value="0" oninput="updateHeadsetValues()">
+                <input type="range" id="headRoll" min="-16" max="16" step="1" value="0" oninput="updateHeadsetValues()">
                 <span class="value-display" id="headRollVal">0°</span>
             </div>
         </div>
