@@ -8,49 +8,126 @@ Connects to Pi WebSocket server
 import asyncio
 import websockets
 import json
-from datetime import datetime
+import threading
+from queue import Queue
 
 # Configuration
-PI_WEBSOCKET_URL = 'ws://192.168.1.250:8080'  
+PI_WEBSOCKET_URL = 'ws://192.168.1.60:8080'  
 
 class TeleopClient:
     def __init__(self, pi_url=PI_WEBSOCKET_URL):
         self.pi_url = pi_url
         self.websocket = None
         self.connected = False
-        self.receive_callback = None  # Callback for incoming sensor data
+        self.receive_callback = None
+        self.send_queue = Queue()
+        self.loop = None
+        self.thread = None
+        self._running = False
         
+    def start(self):
+        """Start the async event loop in a separate thread"""
+        self._running = True
+        self.thread = threading.Thread(target=self._run_async_loop, daemon=True)
+        self.thread.start()
+        
+        # Wait for connection
+        import time
+        timeout = 5
+        start = time.time()
+        while not self.connected and time.time() - start < timeout:
+            time.sleep(0.1)
+        
+        return self.connected
+    
+    def _run_async_loop(self):
+        """Run the asyncio event loop in this thread"""
+        self.loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(self.loop)
+        
+        try:
+            self.loop.run_until_complete(self._async_main())
+        except Exception as e:
+            print(f"Async loop error: {e}")
+        finally:
+            self.loop.close()
+    
+    async def _async_main(self):
+        """Main async function that handles connection and loops"""
+        # Connect
+        if not await self.connect():
+            return
+        
+        # Run both send and receive loops concurrently
+        await asyncio.gather(
+            self._send_loop(),
+            self._receive_loop(),
+            return_exceptions=True
+        )
+    
     async def connect(self):
         """Connect to Pi WebSocket server"""
         try:
-            self.websocket = await websockets.connect(self.pi_url)
+            self.websocket = await websockets.connect(
+                self.pi_url,
+                ping_interval=20,  # Send ping every 20 seconds
+                ping_timeout=10    # Wait 10 seconds for pong
+            )
             self.connected = True
             print(f"✓ Connected to Pi at {self.pi_url}")
-            
-            # Send ping to verify
-            await self.send_ping()
-            
             return True
         except Exception as e:
             print(f"✗ Failed to connect: {e}")
             self.connected = False
             return False
     
-    async def disconnect(self):
-        """Disconnect from Pi"""
-        if self.websocket:
-            await self.websocket.close()
-            self.connected = False
-            print("Disconnected from Pi")
+    async def _send_loop(self):
+        """Loop to send queued messages"""
+        while self._running and self.connected:
+            try:
+                # Check if there's data to send (non-blocking)
+                if not self.send_queue.empty():
+                    data = self.send_queue.get_nowait()
+                    
+                    if self.websocket and self.connected:
+                        await self.websocket.send(json.dumps(data))
+                else:
+                    # Small sleep to prevent busy waiting
+                    await asyncio.sleep(0.001)
+                    
+            except Exception as e:
+                print(f"Error in send loop: {e}")
+                self.connected = False
+                break
     
-    async def send_ping(self):
-        """Send ping to verify connection"""
-        if self.websocket:
-            await self.websocket.send(json.dumps({'type': 'ping'}))
+    async def _receive_loop(self):
+        """Loop to receive data from Pi"""
+        while self._running and self.connected:
+            try:
+                message = await asyncio.wait_for(self.websocket.recv(), timeout=1.0)
+                data = json.loads(message)
+                
+                print(f"Pi -> PC: {message}")
+                
+                # Call callback if set
+                if self.receive_callback:
+                    self.receive_callback(data)
+                    
+            except asyncio.TimeoutError:
+                # No message received, continue
+                continue
+            except websockets.exceptions.ConnectionClosed:
+                print("Connection to Pi closed")
+                self.connected = False
+                break
+            except Exception as e:
+                print(f"Error receiving: {e}")
+                self.connected = False
+                break
     
-    async def send_tracking_data(self, finger_data, hand_position, hand_rotation, head_rotation):
+    def send_tracking_data(self, finger_data, hand_position, hand_rotation, head_rotation):
         """
-        Send tracking data to Pi
+        Queue tracking data to be sent to Pi
         
         Args:
             finger_data: dict with keys t, i, m, r, p (thumb, index, middle, ring, pinky)
@@ -58,7 +135,7 @@ class TeleopClient:
             hand_rotation: dict with keys p, y, r (pitch, yaw, roll)
             head_rotation: dict with keys p, y, r (pitch, yaw, roll)
         """
-        if not self.websocket or not self.connected:
+        if not self.connected:
             return False
         
         try:
@@ -70,51 +147,30 @@ class TeleopClient:
                 'rotationHead': head_rotation
             }
             
-            await self.websocket.send(json.dumps(data))
+            self.send_queue.put(data)
             return True
             
         except Exception as e:
-            print(f"Error sending tracking data: {e}")
-            self.connected = False
+            print(f"Error queueing tracking data: {e}")
             return False
-    
-    async def send_raw(self, data_dict):
-        """Send raw dictionary data"""
-        if not self.websocket or not self.connected:
-            return False
-        
-        try:
-            await self.websocket.send(json.dumps(data_dict))
-            return True
-        except Exception as e:
-            print(f"Error sending data: {e}")
-            self.connected = False
-            return False
-    
-    async def receive_loop(self):
-        """Loop to receive data from Pi (run as task)"""
-        while self.connected:
-            try:
-                message = await self.websocket.recv()
-                data = json.loads(message)
-                
-                print(f"Pi -> PC: {message}")
-                
-                # Call callback if set
-                if self.receive_callback:
-                    self.receive_callback(data)
-                    
-            except websockets.exceptions.ConnectionClosed:
-                print("Connection to Pi closed")
-                self.connected = False
-                break
-            except Exception as e:
-                print(f"Error receiving: {e}")
-                await asyncio.sleep(0.1)
     
     def set_receive_callback(self, callback):
         """Set callback function for incoming sensor data"""
         self.receive_callback = callback
+    
+    def stop(self):
+        """Stop the client and cleanup"""
+        self._running = False
+        self.connected = False
+        
+        if self.websocket and self.loop:
+            # Schedule websocket close in the event loop
+            asyncio.run_coroutine_threadsafe(self.websocket.close(), self.loop)
+        
+        if self.thread:
+            self.thread.join(timeout=2)
+        
+        print("Teleop client stopped")
 
 
 # =============================================================================
@@ -123,8 +179,6 @@ class TeleopClient:
 
 # Global client instance
 _client = None
-_loop = None
-_receive_task = None
 
 def init_teleop_client(pi_ip='192.168.1.100', on_receive=None):
     """
@@ -134,25 +188,15 @@ def init_teleop_client(pi_ip='192.168.1.100', on_receive=None):
         pi_ip: IP address of the Raspberry Pi
         on_receive: Callback function for incoming sensor data
     """
-    global _client, _loop, _receive_task
+    global _client
     
     _client = TeleopClient(f'ws://{pi_ip}:8080')
     
     if on_receive:
         _client.set_receive_callback(on_receive)
     
-    # Create event loop
-    _loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(_loop)
-    
-    # Connect
-    connected = _loop.run_until_complete(_client.connect())
-    
-    if connected:
-        # Start receive loop in background
-        _receive_task = _loop.create_task(_client.receive_loop())
-    
-    return connected
+    # Start the client (this will run asyncio in a background thread)
+    return _client.start()
 
 def send_tracking(thumb, index, middle, ring, pinky,
                   hand_x, hand_y, hand_z,
@@ -163,7 +207,7 @@ def send_tracking(thumb, index, middle, ring, pinky,
     
     All angles in degrees, positions in whatever units you prefer
     """
-    global _client, _loop
+    global _client
     
     if not _client or not _client.connected:
         return False
@@ -173,30 +217,16 @@ def send_tracking(thumb, index, middle, ring, pinky,
     hand_rotation = {'p': hand_pitch, 'y': hand_yaw, 'r': hand_roll}
     head_rotation = {'p': head_pitch, 'y': head_yaw, 'r': head_roll}
     
-    # Run async send in the event loop
-    future = asyncio.run_coroutine_threadsafe(
-        _client.send_tracking_data(finger_data, hand_position, hand_rotation, head_rotation),
-        _loop
-    )
-    
-    return future.result(timeout=0.1)
+    return _client.send_tracking_data(finger_data, hand_position, hand_rotation, head_rotation)
 
 def process_incoming():
-    """Process any incoming messages (call periodically)"""
-    global _loop
-    if _loop:
-        _loop.run_until_complete(asyncio.sleep(0))
+    """Process any incoming messages (call periodically) - No longer needed but kept for compatibility"""
+    pass
 
 def cleanup_teleop():
     """Cleanup (call on shutdown)"""
-    global _client, _loop, _receive_task
+    global _client
     
-    if _receive_task:
-        _receive_task.cancel()
-    
-    if _client and _loop:
-        _loop.run_until_complete(_client.disconnect())
-    
-    if _loop:
-        _loop.close()
-
+    if _client:
+        _client.stop()
+        _client = None
