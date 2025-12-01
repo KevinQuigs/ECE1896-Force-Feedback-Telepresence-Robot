@@ -69,7 +69,7 @@ def main():
 
         concatenated_data = ESP_DATA + UNITY_DATA
         print(f"String Sent: {concatenated_data}")
-        time.sleep(3)  # adjust rate as needed
+        time.sleep(1)  # adjust rate as needed
 
 if __name__ == "__main__":
     main()
