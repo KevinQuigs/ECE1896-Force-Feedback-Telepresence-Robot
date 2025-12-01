@@ -73,56 +73,46 @@ void loop() {
   receivedString = "";
   input.trim();
 
+  // Expected format: "angle1,angle2,angle3,angle4,angle5,angle6,angle7"
+  // Order: Thumb, Index, Middle, Ring, Pinky, WristFlex, WristRotate
+
+  int values[NUM_SERVOS];
+  int valueCount = 0;
   int pos = 0;
 
-  while (pos < input.length()) {
-    bool matched = false;
-
-    for (int s = 0; s < NUM_SERVOS; s++) {
-      int tagLen = strlen(tags[s]);
-
-      // Finger (F prefix)
-      if (s <= 4) {
-        if (input.substring(pos, pos + 1 + tagLen) == ("F" + String(tags[s]))) {
-          pos += 1 + tagLen;
-
-          int start = pos;
-          while (pos < input.length() && isDigit(input[pos])) pos++;
-          int angle = input.substring(start, pos).toInt();
-
-          switch (s) {
-            case 0: moveThumb(angle); break;
-            case 1: moveIndex(angle); break;
-            case 2: moveMiddle(angle); break;
-            case 3: moveRing(angle); break;
-            case 4: movePinky(angle); break;
-          }
-
-          sendFeedback("OK F" + String(tags[s]) + angle);
-          matched = true;
-          break;
-        }
-      }
-      // Wrist
-      else {
-        if (input.substring(pos, pos + tagLen) == tags[s]) {
-          pos += tagLen;
-
-          int start = pos;
-          while (pos < input.length() && isDigit(input[pos])) pos++;
-          int angle = input.substring(start, pos).toInt();
-
-          if (s == 5) moveWristFlex(angle);
-          if (s == 6) moveWristRotate(angle);
-
-          sendFeedback("OK " + String(tags[s]) + angle);
-          matched = true;
-          break;
-        }
-      }
+  // Parse comma-separated values
+  while (pos < input.length() && valueCount < NUM_SERVOS) {
+    int start = pos;
+    
+    // Read digits (and optional negative sign)
+    if (input[pos] == '-') pos++;
+    while (pos < input.length() && isDigit(input[pos])) pos++;
+    
+    if (pos > start) {
+      values[valueCount] = input.substring(start, pos).toInt();
+      valueCount++;
     }
     
-    if (!matched) pos++;
+    // Skip comma
+    if (pos < input.length() && input[pos] == ',') {
+      pos++;
+    }
   }
-  
+
+  // Apply values to servos in order
+  if (valueCount > 0 && values[0] >= 0) moveThumb(values[0]);
+  if (valueCount > 1 && values[1] >= 0) moveIndex(values[1]);
+  if (valueCount > 2 && values[2] >= 0) moveMiddle(values[2]);
+  if (valueCount > 3 && values[3] >= 0) moveRing(values[3]);
+  if (valueCount > 4 && values[4] >= 0) movePinky(values[4]);
+  if (valueCount > 5 && values[5] >= 0) moveWristFlex(values[5]);
+  if (valueCount > 6 && values[6] >= 0) moveWristRotate(values[6]);
+
+  // Send feedback
+  String feedback = "OK ";
+  for (int i = 0; i < valueCount; i++) {
+    feedback += String(values[i]);
+    if (i < valueCount - 1) feedback += ",";
+  }
+  sendFeedback(feedback);
 }

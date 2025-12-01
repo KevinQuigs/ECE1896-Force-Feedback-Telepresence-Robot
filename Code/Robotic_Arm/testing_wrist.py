@@ -87,8 +87,9 @@ class FingerControlGUI(QWidget):
 
     def send_angles(self):
         if self.serial_conn and self.serial_conn.is_open:
-            prefix = ["FT", "FI", "FM", "FR", "FP", "WF", "WR"]  # Thumb, Index, Middle, Ring, Pinky, Wrist Flex, Wrist Rotate
-            data = "".join(f"{prefix[i]}{self.angles[i]}" for i in range(len(self.angles))) + "\n"
+            # Send as comma-separated values: "90,45,120,80,60,90,45\n"
+            # Order: Thumb, Index, Middle, Ring, Pinky, WristFlex, WristRotate
+            data = ",".join(str(angle) for angle in self.angles) + "\n"
             self.serial_conn.write(data.encode())
             print(f"Sent: {data.strip()}")
         else:

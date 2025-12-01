@@ -10,7 +10,7 @@ UNITY_DATA = ""
 def read_esp():
     global ESP_DATA
     try:
-        esp = serial.Serial("COM3", 9600, timeout=1)
+        esp = serial.Serial("COM3", 112500, timeout=1)
     except Exception as e:
         print("Failed to open serial:", e)
         return
@@ -69,7 +69,7 @@ def main():
 
         concatenated_data = ESP_DATA + UNITY_DATA
         print(f"String Sent: {concatenated_data}")
-        time.sleep(1)  # adjust rate as needed
+        time.sleep(.01)  # adjust rate as needed
 
 if __name__ == "__main__":
     main()
