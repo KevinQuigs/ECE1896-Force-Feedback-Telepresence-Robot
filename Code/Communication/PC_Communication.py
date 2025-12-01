@@ -61,46 +61,37 @@ def parse_unity_data(unity_data_str):
     Parse Unity tracking data string and extract values.
     
     Args:
-        unity_data_str: String in format "MP0MY0MR0HX0HY0HZ0KP351.5KY356.7KR8.2"
+        unity_data_str: String in format "0.000,0.000,0.000,0.000,0.000,0.000,351.051,356.705,8.020"
         
     Returns:
         dict: Dictionary containing all parsed values
     """
     try:
-        # Define the identifiers in order
-        identifiers = ['MP', 'MY', 'MR', 'HX', 'HY', 'HZ', 'KP', 'KY', 'KR']
+        # Split by comma and convert to floats
+        values = [float(x.strip()) for x in unity_data_str.split(',')]
         
-        # Use regex to find all identifier-value pairs
-        # Pattern matches: 2 letters followed by optional minus and digits with optional decimal
-        pattern = r'([A-Z]{2})(-?\d+\.?\d*)'
-        matches = re.findall(pattern, unity_data_str)
+        # Verify we have the correct number of values
+        if len(values) != 9:
+            raise ValueError(f"Expected 9 values, got {len(values)}")
         
-        # Create a dictionary from matches
-        data_dict = {identifier: float(value) for identifier, value in matches}
-        
-        # Verify all expected identifiers are present
-        for identifier in identifiers:
-            if identifier not in data_dict:
-                raise ValueError(f"Identifier {identifier} not found")
-        
-        # Map to meaningful variable names in the correct order
+        # Map to meaningful variable names
         unity_data = {
-            'controller_pitch': data_dict['MP'],
-            'controller_yaw': data_dict['MY'],
-            'controller_roll': data_dict['MR'],
-            'controller_x': data_dict['HX'],
-            'controller_y': data_dict['HY'],
-            'controller_z': data_dict['HZ'],
-            'headset_pitch': data_dict['KP'],
-            'headset_yaw': data_dict['KY'],
-            'headset_roll': data_dict['KR']
+            'controller_pitch': values[0],
+            'controller_yaw': values[1],
+            'controller_roll': values[2],
+            'controller_x': values[3],
+            'controller_y': values[4],
+            'controller_z': values[5],
+            'headset_pitch': values[6],
+            'headset_yaw': values[7],
+            'headset_roll': values[8]
         }
         
         return unity_data
         
     except (IndexError, ValueError) as e:
         print(f"Error parsing Unity data: {e}")
-        print(f"Raw data: {unity_data_str}")
+        print(f"Raw data: '{unity_data_str}'")
         return None
 
 
@@ -109,44 +100,34 @@ def parse_esp_data(esp_data_str):
     Parse ESP32 finger tracking data string and extract values.
     
     Args:
-        esp_data_str: String in format "FT90.12FI85.34FM80.56FR75.78FP70.90" or "FT90FI85FM80FR75FP70"
+        esp_data_str: String in format "90.12,85.34,80.56,75.78,70.90"
         
     Returns:
         dict: Dictionary containing all parsed values
     """
     try:
-        # Define the identifiers in order
-        identifiers = ['FT', 'FI', 'FM', 'FR', 'FP']
+        # Split by comma and convert to floats
+        values = [float(x.strip()) for x in esp_data_str.split(',')]
         
-        # Use regex to find all identifier-value pairs
-        # Pattern matches: 2 letters followed by optional minus and digits with optional decimal
-        pattern = r'([A-Z]{2})(-?\d+\.?\d*)'
-        matches = re.findall(pattern, esp_data_str)
-        
-        # Create a dictionary from matches
-        data_dict = {identifier: float(value) for identifier, value in matches}
-        
-        # Verify all expected identifiers are present
-        for identifier in identifiers:
-            if identifier not in data_dict:
-                raise ValueError(f"Identifier {identifier} not found")
+        # Verify we have the correct number of values
+        if len(values) != 5:
+            raise ValueError(f"Expected 5 values, got {len(values)}")
         
         # Map to meaningful variable names
         esp_data = {
-            'thumb': data_dict['FT'],
-            'index': data_dict['FI'],
-            'middle': data_dict['FM'],
-            'ring': data_dict['FR'],
-            'pinky': data_dict['FP']
+            'thumb': values[0],
+            'index': values[1],
+            'middle': values[2],
+            'ring': values[3],
+            'pinky': values[4]
         }
         
         return esp_data
         
     except (IndexError, ValueError) as e:
         print(f"Error parsing ESP data: {e}")
-        print(f"Raw data: {esp_data_str}")
-        return None
-    
+        print(f"Raw data: '{esp_data_str}'")
+        return None  
 
 
 
