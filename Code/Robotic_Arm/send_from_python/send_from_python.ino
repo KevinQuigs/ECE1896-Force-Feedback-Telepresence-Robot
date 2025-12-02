@@ -56,7 +56,7 @@ void loop() {
       esp_now_send(espC_mac, data, input.length() + 1);
     }
   }
-
+  
   // 2) If feedback from B or C → send to Python
   if (feedback.length() > 0) {
     Serial.print("FB ");

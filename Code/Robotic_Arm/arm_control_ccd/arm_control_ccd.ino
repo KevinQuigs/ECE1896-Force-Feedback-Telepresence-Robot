@@ -6,7 +6,6 @@
 // ======= CHANGE THIS TO SENDER MAC =======
 uint8_t senderMAC[] = {0x38, 0x18, 0x2B, 0xEB, 0x93, 0x14};
 
-// Calculate end effector position from joint angles
 struct Vector3 {
   float x, y, z;
 };
@@ -38,7 +37,7 @@ int shoulderFrontMax = 1000;
 int shoulderTwistMin = 150;
 int shoulderTwistMax = 4000;
 
-int bicepMin = 50;
+int bicepMin = 200;
 int bicepMax = 1800;
 
 // ======================= ROBOT DIMENSIONS (meters) =======================
@@ -56,8 +55,8 @@ const float FRONT_NEUTRAL_POT = 550.0;
 const float FRONT_NEUTRAL_ANGLE = 0.0;
 const float FRONT_POT_PER_DEGREE = (1000.0 - 550.0) / 35.0;
 
-const float TWIST_NEUTRAL_POT = 750.0;
-const float TWIST_POT_PER_DEGREE = 4095.0 / 270.0;
+const float TWIST_NEUTRAL_POT = 1100.0;
+const float TWIST_POT_PER_DEGREE = (4095.0 - 1100.0) / 90.0;
 
 const float ELBOW_MIN_ANGLE = 30.0;
 const float ELBOW_MIN_POT = 50.0;
@@ -124,6 +123,7 @@ void updateCurrentAngles() {
 }
 
 // ======================= FORWARD KINEMATICS =======================
+// Calculate end effector position from joint angles
 
 
 Vector3 forwardKinematics(JointAngles angles) {
@@ -209,9 +209,15 @@ bool solveCCD(float target_x, float target_y, float target_z, JointAngles &resul
   float maxReach = SHOULDER_TO_ELBOW + ELBOW_TO_HAND;
   float minReach = fabs(SHOULDER_TO_ELBOW - ELBOW_TO_HAND);
   
-  if (distance > maxReach * 1.05 || distance < minReach * 0.95) {
-    Serial.println("Target likely out of reach!");
-    return false;
+  bool outOfReach = false;
+  if (distance > maxReach * 1.05) {
+    Serial.printf("WARNING: Target %.3fm away, max reach is %.3fm - will get as close as possible\n", 
+      distance, maxReach);
+    outOfReach = true;
+  } else if (distance < minReach * 0.95) {
+    Serial.printf("WARNING: Target %.3fm away, min reach is %.3fm - will get as close as possible\n", 
+      distance, minReach);
+    outOfReach = true;
   }
   
   Serial.println("=== Starting CCD Iterations ===");
@@ -277,7 +283,7 @@ bool solveCCD(float target_x, float target_y, float target_z, JointAngles &resul
   Serial.printf("Final angles: Lat=%.1f° Front=%.1f° Twist=%.1f° Elbow=%.1f°\n",
     result.lateral, result.front, result.twist, result.elbow);
   
-  // Return true anyway if we got reasonably close
+  // Calculate final error
   Vector3 final_pos = forwardKinematics(result);
   float final_error = sqrt(
     pow(target_x - final_pos.x, 2) +
@@ -285,7 +291,10 @@ bool solveCCD(float target_x, float target_y, float target_z, JointAngles &resul
     pow(target_z - final_pos.z, 2)
   );
   
-  return (final_error < 0.05); // Accept if within 5cm
+  Serial.printf("Final error: %.3fm (%.1fcm)\n", final_error, final_error * 100);
+  
+  // Always return true - we'll get as close as we can
+  return true;
 }
 
 // ======================= MOVEMENT CONTROL =======================
@@ -451,21 +460,20 @@ void onDataRecv(const esp_now_recv_info_t *info, const uint8_t *data, int len) {
       Serial.printf("Moving to target: X=%.3f Y=%.3f Z=%.3f\n", x, y, z);
       sendDebugStatus("IK: Starting solve...");
       
-      if (solveCCD(x, y, z, targetAngles)) {
-        ikTarget.x = x;
-        ikTarget.y = y;
-        ikTarget.z = z;
-        ikTarget.active = true;
-        activeCommand = "ik_move";
-        
-        char statusMsg[100];
-        snprintf(statusMsg, sizeof(statusMsg), 
-          "IK: Target angles: Lat=%.1f Front=%.1f Twist=%.1f Elbow=%.1f",
-          targetAngles.lateral, targetAngles.front, targetAngles.twist, targetAngles.elbow);
-        sendDebugStatus(statusMsg);
-      } else {
-        sendDebugStatus("IK: FAILED - Target unreachable!");
-      }
+      // Always attempt to solve, even if seemingly unreachable
+      solveCCD(x, y, z, targetAngles);
+      
+      ikTarget.x = x;
+      ikTarget.y = y;
+      ikTarget.z = z;
+      ikTarget.active = true;
+      activeCommand = "ik_move";
+      
+      char statusMsg[100];
+      snprintf(statusMsg, sizeof(statusMsg), 
+        "IK: Target angles: Lat=%.1f Front=%.1f Twist=%.1f Elbow=%.1f",
+        targetAngles.lateral, targetAngles.front, targetAngles.twist, targetAngles.elbow);
+      sendDebugStatus(statusMsg);
     } else {
       sendDebugStatus("IK: FAILED - Invalid goto format!");
     }
@@ -488,9 +496,13 @@ const unsigned long SEND_INTERVAL = 500;
 void sendPotValues() {
   updateCurrentAngles();
   
-  char msg[150];
-  snprintf(msg, sizeof(msg), "Status:%s | Lat:%.1f° Front:%.1f° Twist:%.1f° Elbow:%.1f° | Pots:%d,%d,%d,%d",
+  // Calculate current hand position using forward kinematics
+  Vector3 handPos = forwardKinematics(currentAngles);
+  
+  char msg[200];
+  snprintf(msg, sizeof(msg), "Status:%s | Pos:(%.3f,%.3f,%.3f) | Ang: L%.1f F%.1f T%.1f E%.1f | Pot:%d,%d,%d,%d",
     activeCommand.c_str(),
+    handPos.x, handPos.y, handPos.z,
     currentAngles.lateral, currentAngles.front, currentAngles.twist, currentAngles.elbow,
     analogRead(shoulderLatPot), analogRead(shoulderFrontPot), 
     analogRead(shoulderTwistPot), analogRead(bicepPot));
@@ -501,6 +513,9 @@ void sendPotValues() {
     memset(bcast, 0xFF, 6);
     esp_now_send(bcast, (uint8_t*)msg, strlen(msg) + 1);
   }
+  
+  // Also print to serial for debugging
+  Serial.printf("Hand Position: (%.3f, %.3f, %.3f)\n", handPos.x, handPos.y, handPos.z);
 }
 
 void sendDebugStatus(const char* msg) {

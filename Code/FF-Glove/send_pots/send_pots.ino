@@ -4,8 +4,8 @@
 #define POT_THUMB 36
 #define POT_INDEX 39
 #define POT_MIDDLE 34
-#define POT_RING 12
-#define POT_PINKY 13
+#define POT_RING 35
+#define POT_PINKY 32
 
 void setup() {
   Serial.begin(112500);
