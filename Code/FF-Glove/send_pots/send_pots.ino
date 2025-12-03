@@ -1,11 +1,11 @@
 #include <Arduino.h>
 
 // ADC pins
-#define POT_THUMB 34
-#define POT_INDEX 35
-#define POT_MIDDLE 32
-#define POT_RING 33
-#define POT_PINKY 36
+#define POT_THUMB 36
+#define POT_INDEX 39
+#define POT_MIDDLE 34
+#define POT_RING 35
+#define POT_PINKY 32
 
 void setup() {
   Serial.begin(112500);
@@ -20,12 +20,23 @@ void setup() {
 void loop() {
 
   // Convert all 5 fingers
-  int thumb = convert_pot2ang(analogRead(POT_THUMB), 0, 180, 500, 3500);
-  int index = convert_pot2ang(analogRead(POT_INDEX), 0, 180, 500, 3500);
-  int middle = convert_pot2ang(analogRead(POT_MIDDLE), 0, 180, 2550, 4095);
-  int ring   = convert_pot2ang(analogRead(POT_RING),   0, 180, 890, 1440);
-  int pinky  = convert_pot2ang(analogRead(POT_PINKY),  0, 180, 580, 1000);
+  int thumb = 180 - convert_pot2ang(analogRead(POT_THUMB), 0, 180, 0, 2270);
+  int index = 180 - convert_pot2ang(analogRead(POT_INDEX), 0, 180, 0, 1780);
+  int middle = 180 - convert_pot2ang(analogRead(POT_MIDDLE), 0, 180, 2300, 4095);
+  int ring   = 180 - convert_pot2ang(analogRead(POT_RING),   0, 180, 1320, 3100);
+  int pinky  = 180 - convert_pot2ang(analogRead(POT_PINKY),  0, 180, 75, 1800);
 
+  // int thumb = map(analogRead(POT_THUMB), 0, 2270, 0, 180);
+  // int index = map(analogRead(POT_INDEX), 0, 1780, 0, 180);
+  // int middle = map(analogRead(POT_MIDDLE), 2300, 4095, 0, 180);
+  // int ring   = map(analogRead(POT_RING), 1320, 3100, 0, 180);
+  // int pinky  = map(analogRead(POT_PINKY), 75, 1800, 0, 180);
+
+  // int thumb = analogRead(POT_THUMB);
+  // int index = analogRead(POT_INDEX);
+  // int middle = analogRead(POT_MIDDLE);
+  // int ring   = analogRead(POT_RING);
+  // int pinky  = analogRead(POT_PINKY);
   // Format: FTxxFIxxFMxxFRxxFPxx
   // Serial.print("FT");
   Serial.print(thumb);

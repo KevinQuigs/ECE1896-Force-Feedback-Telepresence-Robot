@@ -41,7 +41,7 @@ def handle_force_feedback(data):
     """Called when sensor data arrives from robot"""
     global force_feedback_serial
     if data.get('type') == 'sensor':
-        print(f"Force feedback received: {data}")
+        # print(f"Force feedback received: {data}")
         # Send to your force feedback hardware here
         try:
             if force_feedback_serial and force_feedback_serial.is_open:
@@ -63,6 +63,7 @@ def read_esp():
             line = esp.readline().decode().strip()
             if line:
                 ESP_DATA = line
+                print(f"Received from ESP: {ESP_DATA}")
                 
         except Exception as e:
             print("ESP read error:", e)
@@ -71,12 +72,22 @@ def read_esp():
 # --- Read Unity TCP in a thread ---
 def read_unity(conn):
     global UNITY_DATA
+    buffer = ""
     while True:
         try:
-            data = conn.recv(1024).decode().strip()
+            data = conn.recv(1024).decode()
             if not data:
                 break
-            UNITY_DATA = data
+            
+            buffer += data
+            
+            # Process complete lines (messages ending with \n)
+            while '\n' in buffer:
+                line, buffer = buffer.split('\n', 1)
+                if line.strip():  # Only update if not empty
+                    UNITY_DATA = line.strip()
+                    print(f"Received from Unity: {UNITY_DATA}")  # Debug print
+                    
         except Exception as e:
             print("Unity read error:", e)
             break

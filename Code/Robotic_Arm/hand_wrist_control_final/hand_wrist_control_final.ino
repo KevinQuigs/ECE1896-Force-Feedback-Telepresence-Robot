@@ -3,19 +3,23 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-uint8_t espA_mac[] = {0x38, 0x18, 0x2B, 0xEB, 0x93, 0x14};  // CHANGE TO ESP-A MAC
+// uint8_t espA_mac[] = {0x38, 0x18, 0x2B, 0xEB, 0x93, 0x14};  // MICRO
+uint8_t espA_mac[] = {0xCC, 0xDB, 0xA7, 0x9A, 0xDF, 0x1C}; // GUMP
 
 String receivedString = "";
 
 // ==== SERVO SETUP ====
 const int thumbPin = 15, indexPin = 2, middlePin = 4, ringPin = 16;
-const int pinkyPin = 17, wristFlexPin = 12, wristRotatePin = 13;
+const int pinkyPin = 17, wristFlexPin = 13, wristRotatePin = 12;
+
+// ==== Hall Effect Setup ====
+const int thumbHall = 36, indexHall = 35, middleHall = 34, ringHall = 39, pinkyHall = 32;
 
 Servo thumbF, indexF, middleF, ringF, pinkyF, wristFlex, wristRotate;
 
 Servo* servos[] = {&thumbF, &indexF, &middleF, &ringF, &pinkyF, &wristFlex, &wristRotate};
 int pins[] = {thumbPin,indexPin,middlePin,ringPin,pinkyPin,wristFlexPin,wristRotatePin};
-const char* tags[] = {"T","I","M","R","P","WF","WR"};
+const char* f[] = {"T","I","M","R","MP","WY","MR"};
 const int NUM_SERVOS = 7;
 
 void sendFeedback(String msg) {
@@ -26,8 +30,8 @@ void sendFeedback(String msg) {
 
 void onReceive(const esp_now_recv_info *info, const uint8_t *incoming, int len) {
   receivedString = String((char*)incoming);
+  Serial.print("Received: ");
   Serial.println(receivedString);
-  
 }
 
 void setup() {
@@ -51,6 +55,13 @@ void setup() {
   for (int i = 0; i < NUM_SERVOS; i++)
     servos[i]->attach(pins[i], 500, 2400);
 
+  // Configure Hall effect pins as input
+  pinMode(thumbHall, INPUT);
+  pinMode(indexHall, INPUT);
+  pinMode(middleHall, INPUT);
+  pinMode(ringHall, INPUT);
+  pinMode(pinkyHall, INPUT);
+
   Serial.println("ESP-B/C READY");
 }
 
@@ -73,56 +84,74 @@ void loop() {
   receivedString = "";
   input.trim();
 
+  // Expected format: "angle1,angle2,angle3,angle4,angle5,angle6,angle7,..."
+  // Can handle both integers and floats
+  // Order: Thumb, Index, Middle, Ring, Pinky, WristFlex, WristRotate, (Unity data...)
+
+  int values[50];  // Store as integers for servos
+  int valueCount = 0;
   int pos = 0;
 
+  // Parse ALL comma-separated values (handles floats by converting to int)
   while (pos < input.length()) {
-    bool matched = false;
-
-    for (int s = 0; s < NUM_SERVOS; s++) {
-      int tagLen = strlen(tags[s]);
-
-      // Finger (F prefix)
-      if (s <= 4) {
-        if (input.substring(pos, pos + 1 + tagLen) == ("F" + String(tags[s]))) {
-          pos += 1 + tagLen;
-
-          int start = pos;
-          while (pos < input.length() && isDigit(input[pos])) pos++;
-          int angle = input.substring(start, pos).toInt();
-
-          switch (s) {
-            case 0: moveThumb(angle); break;
-            case 1: moveIndex(angle); break;
-            case 2: moveMiddle(angle); break;
-            case 3: moveRing(angle); break;
-            case 4: movePinky(angle); break;
-          }
-
-          sendFeedback("OK F" + String(tags[s]) + angle);
-          matched = true;
-          break;
-        }
-      }
-      // Wrist
-      else {
-        if (input.substring(pos, pos + tagLen) == tags[s]) {
-          pos += tagLen;
-
-          int start = pos;
-          while (pos < input.length() && isDigit(input[pos])) pos++;
-          int angle = input.substring(start, pos).toInt();
-
-          if (s == 5) moveWristFlex(angle);
-          if (s == 6) moveWristRotate(angle);
-
-          sendFeedback("OK " + String(tags[s]) + angle);
-          matched = true;
-          break;
-        }
-      }
+    int start = pos;
+    
+    // Skip any whitespace
+    while (pos < input.length() && input[pos] == ' ') pos++;
+    start = pos;
+    
+    // Read number (handles negative sign, digits, and decimal point)
+    if (pos < input.length() && input[pos] == '-') pos++;
+    while (pos < input.length() && (isDigit(input[pos]) || input[pos] == '.')) pos++;
+    
+    if (pos > start) {
+      // Convert to float first, then to int (truncates decimal)
+      String numStr = input.substring(start, pos);
+      float floatVal = numStr.toFloat();
+      values[valueCount] = (int)floatVal;
+      valueCount++;
     }
     
-    if (!matched) pos++;
+    // Skip comma and any whitespace
+    while (pos < input.length() && (input[pos] == ',' || input[pos] == ' ')) {
+      pos++;
+    }
   }
+
+  Serial.print("Parsed ");
+  Serial.print(valueCount);
+  Serial.print(" values: ");
+  for (int i = 0; i < valueCount; i++) {
+    Serial.print(values[i]);
+    if (i < valueCount - 1) Serial.print(",");
+  }
+  Serial.println();
+
+  // Apply ONLY the first 7 values to servos
+  if (valueCount > 0 && values[0] >= 0) moveThumb(values[0]);
+  if (valueCount > 1 && values[1] >= 0) moveIndex(values[1]);
+  if (valueCount > 2 && values[2] >= 0) moveMiddle(values[2]);
+  if (valueCount > 3 && values[3] >= 0) moveRing(values[3]);
+  if (valueCount > 4 && values[4] >= 0) movePinky(values[4]);
+  if (valueCount > 5 && values[5] >= 0) moveWristFlex(values[5]);
+  if (valueCount > 6 && values[6] >= 0) moveWristRotate(values[6]);
+
+  // Read Hall effect sensors
+  int thumbHallVal = analogRead(thumbHall);
+  int indexHallVal = analogRead(indexHall);
+  int middleHallVal = analogRead(middleHall);
+  int ringHallVal = analogRead(ringHall);
+  int pinkyHallVal = analogRead(pinkyHall);
+
+  // Send feedback with Hall effect values
+  String feedback = String(thumbHallVal) + "," + 
+                    String(indexHallVal) + "," + 
+                    String(middleHallVal) + "," + 
+                    String(ringHallVal) + "," + 
+                    String(pinkyHallVal);
   
+  Serial.print("Sending Hall values: ");
+  Serial.println(feedback);
+  
+  sendFeedback(feedback);
 }

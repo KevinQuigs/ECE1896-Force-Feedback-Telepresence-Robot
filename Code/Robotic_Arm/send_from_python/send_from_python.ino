@@ -6,12 +6,18 @@ String feedback = "";
 
 // MAC ADDRESSES FOR ESP-B & ESP-C
 uint8_t espB_mac[] = {0xCC, 0xDB, 0xA7, 0x90, 0xB7, 0xA4};  // HAND ESP
-// uint8_t espB_mac[] = {0xF0, 0x24, 0xF9, 0x59, 0x8E, 0x1C};;  // SETH ESP
+// uint8_t espB_mac[] = {0xF0, 0x24, 0xF9, 0x59, 0x8E, 0x1C};  // SETH ESP
 uint8_t espC_mac[] = {0xCC, 0xDB, 0xA7, 0x96, 0x60, 0x1C};
 
-// Callback when receiving feedback from B or C (haptic)
+
+// Callback when receiving feedback from B or C (Hall effect values)
 void onReceive(const esp_now_recv_info *info, const uint8_t *incoming, int len) {
   feedback = String((char*)incoming);
+  
+  // Immediately pass to serial when received
+  if (feedback.length() > 0) {
+    Serial.println(feedback);
+  }
 }
 
 void addPeer(uint8_t *mac) {
@@ -55,11 +61,6 @@ void loop() {
       esp_now_send(espC_mac, data, input.length() + 1);
     }
   }
-
-  // 2) If feedback from B or C → send to Python
-  if (feedback.length() > 0) {
-    Serial.print("FB ");
-    Serial.println(feedback);
-    feedback = "";
-  }
+  
+  // Feedback is now handled immediately in onReceive callback
 }
