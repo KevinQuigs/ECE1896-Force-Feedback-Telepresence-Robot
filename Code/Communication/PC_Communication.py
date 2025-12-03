@@ -9,6 +9,18 @@ ESP_DATA = ""
 UNITY_DATA = ""
 force_feedback_serial = None
 
+controller_offset_dict = {
+        'pitch_offset': 0,
+        'yaw_offset': 0,
+        'roll_offset': 0
+    }
+
+hmd_offset_dict = {
+        'pitch_offset': 0,
+        'yaw_offset': 0,
+        'roll_offset': 0
+    }
+
 #10.6.24.196 pitt guest wifi
 #172.20.10.10 kevin hot
 #192.168.1.250 kev wifi
@@ -33,9 +45,10 @@ def handle_force_feedback(data):
         # Send to your force feedback hardware here
         try:
             if force_feedback_serial and force_feedback_serial.is_open:
-                force_feedback_serial.write(f"FF{data['force_thumb']},{data['force_index']},{data['force_middle']},{data['force_ring']},{data['force_pinky']}\n".encode())
+                force_feedback_serial.write(f"A{data['force_thumb']}B{data['force_index']}C{data['force_middle']}D{data['force_ring']}E{data['force_pinky']}\n".encode())
         except Exception as e:
             print(f"Error sending force feedback: {e}")
+
 # --- Read ESP32 serial in a thread ---
 def read_esp():
     global ESP_DATA
@@ -113,7 +126,8 @@ def parse_esp_data(esp_data_str):
     Parse ESP32 finger tracking data string and extract values.
     
     Args:
-        esp_data_str: String in format "90.12,85.34,80.56,75.78,70.90"
+        esp_data_str: String in format "90.12,85.34,80.56,75.78,70.90, 0"
+                                        Thumb,Index,Middle,Ring,Pinky,Calibration butt
         
     Returns:
         dict: Dictionary containing all parsed values
@@ -123,7 +137,7 @@ def parse_esp_data(esp_data_str):
         values = [float(x.strip()) for x in esp_data_str.split(',')]
         
         # Verify we have the correct number of values
-        if len(values) != 5:
+        if len(values) != 6:
             raise ValueError(f"Expected 5 values, got {len(values)}")
         
         # Map to meaningful variable names
@@ -132,7 +146,8 @@ def parse_esp_data(esp_data_str):
             'index': values[1],
             'middle': values[2],
             'ring': values[3],
-            'pinky': values[4]
+            'pinky': values[4],
+            'calib': values[5]
         }
         
         return esp_data
@@ -142,8 +157,25 @@ def parse_esp_data(esp_data_str):
         print(f"Raw data: '{esp_data_str}'")
         return None  
 
+def get_angle_offset(pitch, yaw, roll):
+    # Capture current values as the new zero offsets
+    
+  #pitch -= pitch_offset;
+  #yaw -= yaw_offset;
+  #roll -= roll_offset;
+    offset = {
+        'pitch_offset': pitch,
+        'yaw_offset': yaw,
+        'roll_offset': roll
+    }
+        
+    return offset
+
+
+
 def main():
     global ESP_DATA, UNITY_DATA
+    global controller_offset_dict, hmd_offset_dict
     
     # Initialize connection to webserver
     print("Connecting to Pi...")
@@ -174,6 +206,7 @@ def main():
             last_successful_send = time.time()
             while True:
                 try:
+                    
                     unity_data_dict = parse_unity_data(UNITY_DATA)
                     esp_data_dict = parse_esp_data(ESP_DATA)
                     
@@ -181,6 +214,22 @@ def main():
                         # Skip this iteration if parsing failed
                         time.sleep(0.01)
                         continue 
+                    
+                    
+                    while(esp_data_dict['calib'] > 0):
+                        print("Calibrating... Please close your fingers.")
+                        controller_offset_dict = get_angle_offset(unity_data_dict['controller_pitch'], unity_data_dict['controller_yaw'], unity_data_dict['controller_roll'])
+                        hmd_offset_dict = get_angle_offset(unity_data_dict['headset_pitch'], unity_data_dict['headset_yaw'], unity_data_dict['headset_roll'])
+                        
+                    # Apply offsets
+                    # Controller
+                    unity_data_dict['controller_pitch'] -= controller_offset_dict['pitch_offset']
+                    unity_data_dict['controller_yaw'] -= controller_offset_dict['yaw_offset']
+                    unity_data_dict['controller_roll'] -= controller_offset_dict['roll_offset']
+                    # HMD
+                    unity_data_dict['headset_pitch'] -= hmd_offset_dict['pitch_offset']
+                    unity_data_dict['headset_yaw'] -= hmd_offset_dict['yaw_offset']
+                    unity_data_dict['headset_roll'] -= hmd_offset_dict['roll_offset']    
 
                     # Send to Pi
                     send_tracking(
