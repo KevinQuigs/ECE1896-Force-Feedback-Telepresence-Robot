@@ -7,6 +7,18 @@ ESP_GLOVE_DATA = ""
 UNITY_DATA = ""
 ESP_HAND_FEEDBACK = ""
 
+controller_offset_dict = {
+        'pitch_offset': 0,
+        'yaw_offset': 0,
+        'roll_offset': 0
+    }
+
+hmd_offset_dict = {
+        'pitch_offset': 0,
+        'yaw_offset': 0,
+        'roll_offset': 0
+    }
+
 # --- Read ESP32 Glove serial in a thread ---
 def read_esp_glove(esp_glove):
     global ESP_GLOVE_DATA
@@ -59,8 +71,97 @@ def send_to_unity(conn):
             break
         time.sleep(0.01)
 
+def get_angle_offset(pitch, yaw, roll):
+    # Capture current values as the new zero offsets
+    
+  #pitch -= pitch_offset;
+  #yaw -= yaw_offset;
+  #roll -= roll_offset;
+    offset = {
+        'pitch_offset': pitch,
+        'yaw_offset': yaw,
+        'roll_offset': roll
+    }
+        
+    return offset
+
+def parse_unity_data(unity_data_str):
+    """
+    Parse Unity tracking data string and extract values.
+    
+    Args:
+        unity_data_str: String in format "0.000,0.000,0.000,0.000,0.000,0.000,351.051,356.705,8.020"
+        
+    Returns:
+        dict: Dictionary containing all parsed values
+    """
+    try:
+        # Split by comma and convert to floats
+        values = [float(x.strip()) for x in unity_data_str.split(',')]
+        
+        # Verify we have the correct number of values
+        if len(values) != 9:
+            raise ValueError(f"Expected 9 values, got {len(values)}")
+        
+        # Map to meaningful variable names
+        unity_data = {
+            'controller_pitch': values[0],
+            'controller_yaw': values[1],
+            'controller_roll': values[2],
+            'controller_x': values[3],
+            'controller_y': values[4],
+            'controller_z': values[5],
+            'headset_pitch': values[6],
+            'headset_yaw': values[7],
+            'headset_roll': values[8]
+        }
+        
+        return unity_data
+        
+    except (IndexError, ValueError) as e:
+        print(f"Error parsing Unity data: {e}")
+        print(f"Raw data: '{unity_data_str}'")
+        return None
+
+def parse_esp_data(esp_data_str):
+    """
+    Parse ESP32 finger tracking data string and extract values.
+    
+    Args:
+        esp_data_str: String in format "90.12,85.34,80.56,75.78,70.90, 0"
+                                        Thumb,Index,Middle,Ring,Pinky,Calibration butt
+        
+    Returns:
+        dict: Dictionary containing all parsed values
+    """
+    try:
+        # Split by comma and convert to floats
+        values = [float(x.strip()) for x in esp_data_str.split(',')]
+        
+        # Verify we have the correct number of values
+        if len(values) != 6:
+            raise ValueError(f"Expected 5 values, got {len(values)}")
+        
+        # Map to meaningful variable names
+        esp_data = {
+            'thumb': values[0],
+            'index': values[1],
+            'middle': values[2],
+            'ring': values[3],
+            'pinky': values[4],
+            'calib': values[5]
+        }
+        
+        return esp_data
+        
+    except (IndexError, ValueError) as e:
+        print(f"Error parsing ESP data: {e}")
+        print(f"Raw data: '{esp_data_str}'")
+        return None  
+
 def main():
     global ESP_GLOVE_DATA, UNITY_DATA, ESP_HAND_FEEDBACK
+    global controller_offset_dict, hmd_offset_dict
 
     # Open ESP32 Glove serial connection (reads potentiometer data)
     try:
@@ -104,12 +205,39 @@ def main():
         # Concatenate ESP Glove pot data with Unity data
         concatenated_data = ESP_GLOVE_DATA + "," + UNITY_DATA if UNITY_DATA else ESP_GLOVE_DATA
         
+        unity_data_dict = parse_unity_data(UNITY_DATA)
+        esp_data_dict = parse_esp_data(ESP_GLOVE_DATA)
+
+        if not unity_data_dict or not esp_data_dict:
+            # Skip this iteration if parsing failed
+            time.sleep(0.01)
+            continue 
+        
+        
+        while(esp_data_dict['calib'] > 0):
+            print("Calibrating... Please close your fingers.")
+            controller_offset_dict = get_angle_offset(unity_data_dict['controller_pitch'], unity_data_dict['controller_yaw'], unity_data_dict['controller_roll'])
+            hmd_offset_dict = get_angle_offset(unity_data_dict['headset_pitch'], unity_data_dict['headset_yaw'], unity_data_dict['headset_roll'])
+            
+        # Apply offsets
+        # Controller
+        unity_data_dict['controller_pitch'] -= controller_offset_dict['pitch_offset']
+        unity_data_dict['controller_yaw'] -= controller_offset_dict['yaw_offset']
+        unity_data_dict['controller_roll'] -= controller_offset_dict['roll_offset']
+        # HMD
+        unity_data_dict['headset_pitch'] -= hmd_offset_dict['pitch_offset']
+        unity_data_dict['headset_yaw'] -= hmd_offset_dict['yaw_offset']
+        unity_data_dict['headset_roll'] -= hmd_offset_dict['roll_offset']    
+
+        
+        esp_hand.write(f"{esp_data_dict['thumb']},{esp_data_dict['index']},{esp_data_dict['middle']},{esp_data_dict['ring']},{esp_data_dict['pinky']},{unity_data_dict['controller_x']},{unity_data_dict['controller_y']},{unity_data_dict['controller_z']},{unity_data_dict['controller_pitch']},{unity_data_dict['controller_yaw']},{unity_data_dict['controller_roll']},{unity_data_dict['headset_pitch']},{unity_data_dict['headset_yaw']},{unity_data_dict['headset_roll']}\n".encode())
+        
         # Send concatenated string to ESP Hand
-        if concatenated_data:
-            esp_hand.write((concatenated_data + "\n").encode())
+        #if concatenated_data:
+        #    esp_hand.write((concatenated_data + "\n").encode())
         
         # Debug print
-        print(f"Glove: {ESP_GLOVE_DATA} | Unity: {UNITY_DATA} | Sent to Hand: {concatenated_data}")
+        #print(f"Glove: {ESP_GLOVE_DATA} | Unity: {UNITY_DATA} | Sent to Hand: {concatenated_data}")
         
         time.sleep(0.01)  # adjust rate as needed
 
