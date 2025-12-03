@@ -3,13 +3,17 @@
 #include <esp_now.h>
 #include <WiFi.h>
 
-uint8_t espA_mac[] = {0x38, 0x18, 0x2B, 0xEB, 0x93, 0x14};  // CHANGE TO ESP-A MAC
+// uint8_t espA_mac[] = {0x38, 0x18, 0x2B, 0xEB, 0x93, 0x14};  // MICRO
+uint8_t espA_mac[] = {0xCC, 0xDB, 0xA7, 0x9A, 0xDF, 0x1C}; // GUMP
 
 String receivedString = "";
 
 // ==== SERVO SETUP ====
 const int thumbPin = 15, indexPin = 2, middlePin = 4, ringPin = 16;
 const int pinkyPin = 17, wristFlexPin = 13, wristRotatePin = 12;
+
+// ==== Hall Effect Setup ====
+const int thumbHall = 36, indexHall = 35, middleHall = 34, ringHall = 39, pinkyHall = 32;
 
 Servo thumbF, indexF, middleF, ringF, pinkyF, wristFlex, wristRotate;
 
@@ -50,6 +54,13 @@ void setup() {
   // Attach servos
   for (int i = 0; i < NUM_SERVOS; i++)
     servos[i]->attach(pins[i], 500, 2400);
+
+  // Configure Hall effect pins as input
+  pinMode(thumbHall, INPUT);
+  pinMode(indexHall, INPUT);
+  pinMode(middleHall, INPUT);
+  pinMode(ringHall, INPUT);
+  pinMode(pinkyHall, INPUT);
 
   Serial.println("ESP-B/C READY");
 }
@@ -125,11 +136,22 @@ void loop() {
   if (valueCount > 5 && values[5] >= 0) moveWristFlex(values[5]);
   if (valueCount > 6 && values[6] >= 0) moveWristRotate(values[6]);
 
-  // Send feedback with first 7 values
-  String feedback = "OK ";
-  for (int i = 0; i < min(valueCount, NUM_SERVOS); i++) {
-    feedback += String(values[i]);
-    if (i < min(valueCount, NUM_SERVOS) - 1) feedback += ",";
-  }
+  // Read Hall effect sensors
+  int thumbHallVal = analogRead(thumbHall);
+  int indexHallVal = analogRead(indexHall);
+  int middleHallVal = analogRead(middleHall);
+  int ringHallVal = analogRead(ringHall);
+  int pinkyHallVal = analogRead(pinkyHall);
+
+  // Send feedback with Hall effect values
+  String feedback = String(thumbHallVal) + "," + 
+                    String(indexHallVal) + "," + 
+                    String(middleHallVal) + "," + 
+                    String(ringHallVal) + "," + 
+                    String(pinkyHallVal);
+  
+  Serial.print("Sending Hall values: ");
+  Serial.println(feedback);
+  
   sendFeedback(feedback);
 }

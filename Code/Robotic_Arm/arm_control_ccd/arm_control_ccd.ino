@@ -28,8 +28,8 @@ const int bicepServo1 = 12;
 const int bicepServo2 = 13;
 
 // ======================= POT LIMITS =======================
-int shoulderLatMin = 1450;
-int shoulderLatMax = 1950;
+int shoulderLatMin = 1600;
+int shoulderLatMax = 2050;
 
 int shoulderFrontMin = 250;
 int shoulderFrontMax = 1000;
@@ -47,20 +47,21 @@ const float SHOULDER_TO_ELBOW = 0.2794;
 const float ELBOW_TO_HAND = 0.2349;
 
 // ======================= POT/ANGLE CONVERSION CONSTANTS =======================
-const float LAT_NEUTRAL_POT = 1450.0;
+const float LAT_NEUTRAL_POT = 1560.0;
 const float LAT_NEUTRAL_ANGLE = 0.0;
-const float LAT_POT_PER_DEGREE = (1950.0 - 1450.0) / 35.0;
+const float LAT_POT_PER_DEGREE = (1950.0 - 1560.0) / 35.0;
 
 const float FRONT_NEUTRAL_POT = 550.0;
 const float FRONT_NEUTRAL_ANGLE = 0.0;
 const float FRONT_POT_PER_DEGREE = (1000.0 - 550.0) / 35.0;
 
-const float TWIST_NEUTRAL_POT = 1100.0;
-const float TWIST_POT_PER_DEGREE = (4095.0 - 1100.0) / 90.0;
+// const float TWIST_NEUTRAL_POT = 1100.0;
+const float TWIST_NEUTRAL_POT = 920.0;
+const float TWIST_POT_PER_DEGREE = (2080.0 - 920.0) / 45.0;
 
-const float ELBOW_MIN_ANGLE = 30.0;
+const float ELBOW_MIN_ANGLE = 35.0;
 const float ELBOW_MIN_POT = 50.0;
-const float ELBOW_POT_PER_DEGREE = (1800.0 - 50.0) / (90.0 - 30.0);
+const float ELBOW_POT_PER_DEGREE = (1300.0 - 50.0) / (90.0 - 30.0);
 
 // ======================= IK TARGET & STATE =======================
 struct IKTarget {
@@ -124,7 +125,6 @@ void updateCurrentAngles() {
 
 // ======================= FORWARD KINEMATICS =======================
 // Calculate end effector position from joint angles
-
 
 Vector3 forwardKinematics(JointAngles angles) {
   // Convert angles to radians
