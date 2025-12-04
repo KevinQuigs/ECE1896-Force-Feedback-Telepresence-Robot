@@ -4,7 +4,9 @@
 #include <math.h>
 
 // ======= CHANGE THIS TO SENDER MAC =======
-uint8_t senderMAC[] = {0x38, 0x18, 0x2B, 0xEB, 0x93, 0x14};
+// uint8_t senderMAC[] = {0x38, 0x18, 0x2B, 0xEB, 0x93, 0x14}; //micro
+// uint8_t senderMAC[] = {0xCC, 0xDB, 0xA7, 0x9A, 0xDF, 0x1C}; // gump
+uint8_t senderMAC[] = {0xFC, 0xB4, 0x67, 0x4F, 0x5C, 0x60};; // other micro
 
 struct Vector3 {
   float x, y, z;
@@ -28,15 +30,16 @@ const int bicepServo1 = 12;
 const int bicepServo2 = 13;
 
 // ======================= POT LIMITS =======================
-int shoulderLatMin = 2950;
-int shoulderLatMax = 3800;
+int shoulderLatMin = 2550;
+int shoulderLatMax = 3100;
 
 // GOOD
 int shoulderFrontMin = 800;
 int shoulderFrontMax = 2200;
 
-int shoulderTwistMin = 300;
-int shoulderTwistMax = 3500;
+// GOOD
+int shoulderTwistMin = 350;
+int shoulderTwistMax = 3000;
 
 // GOOD
 int bicepMin = 100;
@@ -49,19 +52,21 @@ const float SHOULDER_TO_ELBOW = 0.2794;
 const float ELBOW_TO_HAND = 0.2349;
 
 // ======================= POT/ANGLE CONVERSION CONSTANTS =======================
-const float LAT_NEUTRAL_POT = 2900.0;
+const float LAT_NEUTRAL_POT = 2600.0;
 const float LAT_NEUTRAL_ANGLE = 0.0;
-const float LAT_POT_PER_DEGREE = (1950.0 - 1560.0) / 35.0;
+const float LAT_POT_PER_DEGREE = (3100.0 - 2600.0) / 35.0;
 
 // GOOD
 const float FRONT_NEUTRAL_POT = 1200.0;
 const float FRONT_NEUTRAL_ANGLE = 0.0;
 const float FRONT_POT_PER_DEGREE = (2200.0 - 1200.0) / 30.0;
 
+// GOOD
 // const float TWIST_NEUTRAL_POT = 1100.0;
 const float TWIST_NEUTRAL_POT = 850.0;
-const float TWIST_POT_PER_DEGREE = (2080.0 - 850.0) / 45.0;
+const float TWIST_POT_PER_DEGREE = (2700.0 - 850.0) / 90.0;
 
+// GOOD
 const float ELBOW_MIN_ANGLE = 10.0;
 const float ELBOW_MIN_POT = 100.0;
 const float ELBOW_POT_PER_DEGREE = (1750.0 - 100.0) / (80.0 - 10.0);

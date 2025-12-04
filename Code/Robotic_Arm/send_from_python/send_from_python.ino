@@ -7,7 +7,8 @@ String feedback = "";
 // MAC ADDRESSES FOR ESP-B & ESP-C
 uint8_t espB_mac[] = {0xCC, 0xDB, 0xA7, 0x90, 0xB7, 0xA4};  // HAND ESP
 uint8_t espA_mac[] = {0xF0, 0x24, 0xF9, 0x5A, 0xC5, 0x7C};  // NECK ESP
-uint8_t espC_mac[] = {0xCC, 0xDB, 0xA7, 0x96, 0x60, 0x1C}; // ARM ESP
+// uint8_t espC_mac[] = {0xCC, 0xDB, 0xA7, 0x96, 0x60, 0x1C}; // ARM ESP
+uint8_t espC_mac[] = {0x38, 0x18, 0x2B, 0xEB, 0x93, 0x14}; // mICRO ARM
 
 
 // Callback when receiving feedback from B or C (Hall effect values)
@@ -58,9 +59,10 @@ void loop() {
       uint8_t data[200];
       input.getBytes(data, input.length() + 1);
 
+      esp_now_send(espA_mac, data, input.length() + 1);
       esp_now_send(espB_mac, data, input.length() + 1);
       esp_now_send(espC_mac, data, input.length() + 1);
-      esp_now_send(espA_mac, data, input.length() + 1);
+      
     }
   }
   

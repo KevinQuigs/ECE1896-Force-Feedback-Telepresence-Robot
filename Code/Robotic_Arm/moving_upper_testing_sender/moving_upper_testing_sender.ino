@@ -3,7 +3,8 @@
 #include <WiFi.h>
 
 // ========== REPLACE WITH RECEIVER MAC ==========
-uint8_t receiverMAC[] = {0xCC, 0xDB, 0xA7, 0x96, 0x60, 0x1C};
+// uint8_t receiverMAC[] = {0xCC, 0xDB, 0xA7, 0x96, 0x60, 0x1C};
+uint8_t receiverMAC[] = {0x38, 0x18, 0x2B, 0xEB, 0x93, 0x14}; // mICRO ARM
 
 // ----- RECEIVE CALLBACK (pot readings arriving from receiver) -----
 void onDataRecv(const esp_now_recv_info_t *info, const uint8_t *data, int len) {
