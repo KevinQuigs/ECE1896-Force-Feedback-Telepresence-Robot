@@ -1,11 +1,12 @@
 #include <Arduino.h>
 
 // ADC pins
-#define POT_THUMB 36
-#define POT_INDEX 39
-#define POT_MIDDLE 34
-#define POT_RING 35
-#define POT_PINKY 32
+#define POT_THUMB 34
+#define POT_INDEX 35
+#define POT_MIDDLE 13
+#define POT_RING 12
+#define POT_PINKY 14
+#define POT_CALIB 5
 
 void setup() {
   Serial.begin(112500);
@@ -15,6 +16,7 @@ void setup() {
   pinMode(POT_MIDDLE, INPUT);
   pinMode(POT_RING, INPUT);
   pinMode(POT_PINKY, INPUT);
+  pinMode(PIN_CALIB, INPUT_PULLUP);
 }
 
 void loop() {
@@ -51,7 +53,10 @@ void loop() {
   Serial.print(ring);
 
   Serial.print(",");
-  Serial.println(pinky);   // newline at the very end
+  Serial.print(pinky);   // newline at the very end
+ 
+  Serial.print(",");
+  Serial.println(digitalRead(POT_CALIB));
 
   delay(20);
 }
