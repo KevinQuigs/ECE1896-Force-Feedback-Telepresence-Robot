@@ -9,6 +9,14 @@ ESP_DATA = ""
 UNITY_DATA = ""
 force_feedback_serial = None
 
+controller_offset_dict = {'pitch_offset': 0.0, 
+                          'yaw_offset': 0.0, 
+                          'roll_offset': 0.0}
+
+hmd_offset_dict = {'pitch_offset': 0.0, 
+                   'yaw_offset': 0.0, 
+                   'roll_offset': 0.0}
+
 #10.6.24.196 pitt guest wifi
 #172.20.10.10 kevin hot
 #192.168.1.250 kev wifi
@@ -138,8 +146,8 @@ def parse_esp_data(esp_data_str):
         values = [float(x.strip()) for x in esp_data_str.split(',')]
 
         # Verify we have the correct number of values
-        if len(values) != 5:
-            raise ValueError(f"Expected 5 values, got {len(values)}")
+        if len(values) != 6:
+            raise ValueError(f"Expected 6 values, got {len(values)}")
 
         # Map to meaningful variable names
         esp_data = {
@@ -147,7 +155,8 @@ def parse_esp_data(esp_data_str):
             'index': values[1],
             'middle': values[2],
             'ring': values[3],
-            'pinky': values[4]
+            'pinky': values[4],
+            'calib': int(values[5])  
         }
 
         return esp_data
@@ -176,7 +185,7 @@ def get_angle_offset(pitch, yaw, roll):
     }
 
 def main():
-    global ESP_DATA, UNITY_DATA
+    global ESP_DATA, UNITY_DATA, controller_offset_dict, hmd_offset_dict
 
     # Initialize connection to webserver
     print("Connecting to Pi...")
