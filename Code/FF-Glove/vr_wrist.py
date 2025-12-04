@@ -2,7 +2,7 @@ import serial
 import time
 
 # Adjust COM port to your Arduino
-arduino = serial.Serial('COM7', 115200, timeout=1)
+arduino = serial.Serial('COM3', 115200, timeout=1)
 time.sleep(2)  # Wait for Arduino to initialize
 
 while True:

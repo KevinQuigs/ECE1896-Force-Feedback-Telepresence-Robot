@@ -9,18 +9,6 @@ ESP_DATA = ""
 UNITY_DATA = ""
 force_feedback_serial = None
 
-controller_offset_dict = {
-        'pitch_offset': 0,
-        'yaw_offset': 0,
-        'roll_offset': 0
-    }
-
-hmd_offset_dict = {
-        'pitch_offset': 0,
-        'yaw_offset': 0,
-        'roll_offset': 0
-    }
-
 #10.6.24.196 pitt guest wifi
 #172.20.10.10 kevin hot
 #192.168.1.250 kev wifi
@@ -41,11 +29,12 @@ def handle_force_feedback(data):
     """Called when sensor data arrives from robot"""
     global force_feedback_serial
     if data.get('type') == 'sensor':
+        print(f"Force feedback received: {data}")
         # print(f"Force feedback received: {data}")
         # Send to your force feedback hardware here
         try:
             if force_feedback_serial and force_feedback_serial.is_open:
-                force_feedback_serial.write(f"A{data['force_thumb']}B{data['force_index']}C{data['force_middle']}D{data['force_ring']}E{data['force_pinky']}\n".encode())
+                force_feedback_serial.write(f"FF{data['force_thumb']},{data['force_index']},{data['force_middle']},{data['force_ring']},{data['force_pinky']}\n".encode())
         except Exception as e:
             print(f"Error sending force feedback: {e}")
 
@@ -64,7 +53,7 @@ def read_esp():
             if line:
                 ESP_DATA = line
                 print(f"Received from ESP: {ESP_DATA}")
-                
+
         except Exception as e:
             print("ESP read error:", e)
             time.sleep(0.1)
@@ -75,9 +64,11 @@ def read_unity(conn):
     buffer = ""
     while True:
         try:
+            data = conn.recv(1024).decode().strip()
             data = conn.recv(1024).decode()
             if not data:
                 break
+            UNITY_DATA = data
             
             buffer += data
             
@@ -106,11 +97,11 @@ def parse_unity_data(unity_data_str):
     try:
         # Split by comma and convert to floats
         values = [float(x.strip()) for x in unity_data_str.split(',')]
-        
+
         # Verify we have the correct number of values
         if len(values) != 9:
             raise ValueError(f"Expected 9 values, got {len(values)}")
-        
+
         # Map to meaningful variable names
         unity_data = {
             'controller_pitch': values[0],
@@ -123,9 +114,9 @@ def parse_unity_data(unity_data_str):
             'headset_yaw': values[7],
             'headset_roll': values[8]
         }
-        
+
         return unity_data
-        
+
     except (IndexError, ValueError) as e:
         print(f"Error parsing Unity data: {e}")
         print(f"Raw data: '{unity_data_str}'")
@@ -137,8 +128,7 @@ def parse_esp_data(esp_data_str):
     Parse ESP32 finger tracking data string and extract values.
     
     Args:
-        esp_data_str: String in format "90.12,85.34,80.56,75.78,70.90, 0"
-                                        Thumb,Index,Middle,Ring,Pinky,Calibration butt
+        esp_data_str: String in format "90.12,85.34,80.56,75.78,70.90"
         
     Returns:
         dict: Dictionary containing all parsed values
@@ -146,48 +136,30 @@ def parse_esp_data(esp_data_str):
     try:
         # Split by comma and convert to floats
         values = [float(x.strip()) for x in esp_data_str.split(',')]
-        
+
         # Verify we have the correct number of values
-        if len(values) != 6:
+        if len(values) != 5:
             raise ValueError(f"Expected 5 values, got {len(values)}")
-        
+
         # Map to meaningful variable names
         esp_data = {
             'thumb': values[0],
             'index': values[1],
             'middle': values[2],
             'ring': values[3],
-            'pinky': values[4],
-            'calib': values[5]
+            'pinky': values[4]
         }
-        
+
         return esp_data
-        
+
     except (IndexError, ValueError) as e:
         print(f"Error parsing ESP data: {e}")
         print(f"Raw data: '{esp_data_str}'")
         return None  
 
-def get_angle_offset(pitch, yaw, roll):
-    # Capture current values as the new zero offsets
-    
-  #pitch -= pitch_offset;
-  #yaw -= yaw_offset;
-  #roll -= roll_offset;
-    offset = {
-        'pitch_offset': pitch,
-        'yaw_offset': yaw,
-        'roll_offset': roll
-    }
-        
-    return offset
-
-
-
 def main():
     global ESP_DATA, UNITY_DATA
-    global controller_offset_dict, hmd_offset_dict
-    
+
     # Initialize connection to webserver
     print("Connecting to Pi...")
     if init_teleop_client('192.168.1.60', on_receive=handle_force_feedback):
@@ -195,7 +167,7 @@ def main():
 
         # Start ESP thread
         threading.Thread(target=read_esp, daemon=True).start()
-        
+
         # Start Unity TCP server
         server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         server.bind(("0.0.0.0", 5001))
@@ -206,21 +178,20 @@ def main():
 
         # Start Unity reader in a separate thread
         threading.Thread(target=read_unity, args=(conn,), daemon=True).start()
-        
+
         # Wait for initial data
         print("Waiting for initial data...")
         while not ESP_DATA or not UNITY_DATA:
             time.sleep(0.1)
-        
+
         # Your main loop
         try:
             last_successful_send = time.time()
             while True:
                 try:
-                    
                     unity_data_dict = parse_unity_data(UNITY_DATA)
                     esp_data_dict = parse_esp_data(ESP_DATA)
-                    
+
                     if not unity_data_dict or not esp_data_dict:
                         # Skip this iteration if parsing failed
                         time.sleep(0.01)
@@ -256,19 +227,19 @@ def main():
                         unity_data_dict['headset_pitch'], unity_data_dict['headset_yaw'], unity_data_dict['headset_roll']
                     )
                     last_successful_send = time.time()
-                    
+
                     # Process incoming messages
                     process_incoming()
-                    
+
                 except Exception as e:
                     print(f"Error in main loop: {e}")
                     # Check if we've been unable to send for too long
                     if time.time() - last_successful_send > 5.0:
                         print("No successful sends for 5 seconds, reconnecting...")
                         break
-                
+
                 time.sleep(1/60)  # 60Hz
-                
+
         except KeyboardInterrupt:
             print("\nShutting down...")
         finally:
@@ -276,9 +247,9 @@ def main():
     else:
         print("Failed to connect!")
 
-    
 
-    
+
+
 
 if __name__ == "__main__":
     main()
