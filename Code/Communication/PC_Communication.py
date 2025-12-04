@@ -226,7 +226,7 @@ def main():
                         time.sleep(0.01)
                         continue 
                     
-                    '''
+                    
                     while(esp_data_dict['calib'] > 0):
                         print("Calibrating... Please close your fingers.")
                         controller_offset_dict = get_angle_offset(unity_data_dict['controller_pitch'], unity_data_dict['controller_yaw'], unity_data_dict['controller_roll'])
@@ -236,7 +236,7 @@ def main():
                         print("Calibrating... Please close your fingers.")
                         controller_offset_dict = get_angle_offset(unity_data_dict['controller_pitch'], unity_data_dict['controller_yaw'], unity_data_dict['controller_roll'])
                         hmd_offset_dict = get_angle_offset(unity_data_dict['headset_pitch'], unity_data_dict['headset_yaw'], unity_data_dict['headset_roll'])
-                        
+                    '''    
 
                     # Apply offsets
                     # Controller
