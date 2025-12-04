@@ -28,15 +28,17 @@ const int bicepServo1 = 12;
 const int bicepServo2 = 13;
 
 // ======================= POT LIMITS =======================
-int shoulderLatMin = 3000;
+int shoulderLatMin = 2950;
 int shoulderLatMax = 3800;
 
-int shoulderFrontMin = 600;
-int shoulderFrontMax = 3000;
+// GOOD
+int shoulderFrontMin = 800;
+int shoulderFrontMax = 2200;
 
 int shoulderTwistMin = 300;
 int shoulderTwistMax = 3500;
 
+// GOOD
 int bicepMin = 100;
 int bicepMax = 1750;
 
@@ -47,21 +49,22 @@ const float SHOULDER_TO_ELBOW = 0.2794;
 const float ELBOW_TO_HAND = 0.2349;
 
 // ======================= POT/ANGLE CONVERSION CONSTANTS =======================
-const float LAT_NEUTRAL_POT = 3000.0;
+const float LAT_NEUTRAL_POT = 2900.0;
 const float LAT_NEUTRAL_ANGLE = 0.0;
 const float LAT_POT_PER_DEGREE = (1950.0 - 1560.0) / 35.0;
 
+// GOOD
 const float FRONT_NEUTRAL_POT = 1200.0;
 const float FRONT_NEUTRAL_ANGLE = 0.0;
-const float FRONT_POT_PER_DEGREE = (1000.0 - 550.0) / 35.0;
+const float FRONT_POT_PER_DEGREE = (2200.0 - 1200.0) / 30.0;
 
 // const float TWIST_NEUTRAL_POT = 1100.0;
 const float TWIST_NEUTRAL_POT = 850.0;
 const float TWIST_POT_PER_DEGREE = (2080.0 - 850.0) / 45.0;
 
-const float ELBOW_MIN_ANGLE = 20.0;
+const float ELBOW_MIN_ANGLE = 10.0;
 const float ELBOW_MIN_POT = 100.0;
-const float ELBOW_POT_PER_DEGREE = (1300.0 - 100.0) / (90.0 - 30.0);
+const float ELBOW_POT_PER_DEGREE = (1750.0 - 100.0) / (80.0 - 10.0);
 
 // ======================= IK TARGET & STATE =======================
 struct IKTarget {
