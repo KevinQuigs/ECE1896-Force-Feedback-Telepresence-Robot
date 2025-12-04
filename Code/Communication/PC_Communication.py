@@ -157,6 +157,24 @@ def parse_esp_data(esp_data_str):
         print(f"Raw data: '{esp_data_str}'")
         return None  
 
+def get_angle_offset(pitch, yaw, roll):
+    """
+    Calculate angle offsets for calibration.
+    
+    Args:
+        pitch: Current pitch angle
+        yaw: Current yaw angle
+        roll: Current roll angle
+        
+    Returns:
+        dict: Dictionary containing pitch_offset, yaw_offset, roll_offset
+    """
+    return {
+        'pitch_offset': pitch,
+        'yaw_offset': yaw,
+        'roll_offset': roll
+    }
+
 def main():
     global ESP_DATA, UNITY_DATA
 
