@@ -2,7 +2,7 @@ import serial
 import socket
 import threading
 import time
-import re
+import keyboard
 from teleop_client import init_teleop_client, send_tracking, cleanup_teleop, process_incoming
 
 ESP_DATA = ""
@@ -226,12 +226,18 @@ def main():
                         time.sleep(0.01)
                         continue 
                     
-                    
+                    '''
                     while(esp_data_dict['calib'] > 0):
                         print("Calibrating... Please close your fingers.")
                         controller_offset_dict = get_angle_offset(unity_data_dict['controller_pitch'], unity_data_dict['controller_yaw'], unity_data_dict['controller_roll'])
                         hmd_offset_dict = get_angle_offset(unity_data_dict['headset_pitch'], unity_data_dict['headset_yaw'], unity_data_dict['headset_roll'])
+                    '''
+                    while(keyboard.is_pressed('c')):
+                        print("Calibrating... Please close your fingers.")
+                        controller_offset_dict = get_angle_offset(unity_data_dict['controller_pitch'], unity_data_dict['controller_yaw'], unity_data_dict['controller_roll'])
+                        hmd_offset_dict = get_angle_offset(unity_data_dict['headset_pitch'], unity_data_dict['headset_yaw'], unity_data_dict['headset_roll'])
                         
+
                     # Apply offsets
                     # Controller
                     unity_data_dict['controller_pitch'] -= controller_offset_dict['pitch_offset']
