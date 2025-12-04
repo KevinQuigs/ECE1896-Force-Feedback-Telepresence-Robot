@@ -230,7 +230,13 @@ def main():
         unity_data_dict['headset_roll'] -= hmd_offset_dict['roll_offset']    
 
         
-        esp_hand.write(f"{esp_data_dict['thumb']},{esp_data_dict['index']},{esp_data_dict['middle']},{esp_data_dict['ring']},{esp_data_dict['pinky']},{unity_data_dict['controller_x']},{unity_data_dict['controller_y']},{unity_data_dict['controller_z']},{unity_data_dict['controller_pitch']},{unity_data_dict['controller_yaw']},{unity_data_dict['controller_roll']},{unity_data_dict['headset_pitch']},{unity_data_dict['headset_yaw']},{unity_data_dict['headset_roll']}\n".encode())
+        esp_hand.write(f"{esp_data_dict['thumb']},{esp_data_dict['index']},
+                       {esp_data_dict['middle']},{esp_data_dict['ring']},
+                       {esp_data_dict['pinky']},{unity_data_dict['controller_x']},
+                       {unity_data_dict['controller_y']},{unity_data_dict['controller_z']},
+                       {unity_data_dict['controller_pitch']},{unity_data_dict['controller_yaw']},
+                       {unity_data_dict['controller_roll']},{unity_data_dict['headset_pitch']},
+                       {unity_data_dict['headset_yaw']},{unity_data_dict['headset_roll']}\n".encode())
         
         # Send concatenated string to ESP Hand
         #if concatenated_data:
